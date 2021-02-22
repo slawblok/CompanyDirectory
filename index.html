@@ -1,0 +1,93 @@
+<!doctype html>
+
+<html lang="en">
+
+	<head>
+
+		<meta charset="utf-8">
+		<title>Company Directory</title>
+		<meta name="description" content="Company Directory">
+		<meta name="author" content="Sławomir Blok">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link href="favicon.svg" rel="icon">
+		<link href="vendors/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<link href="vendors/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+		<link href="css/style.css" rel="stylesheet">
+
+	</head>
+
+	<body class="d-flex flex-column">
+		
+		<header>
+			<nav class="navbar bg-light">
+				<div class="container-fluid row">
+						<div class="col-auto">
+							<div class="nav-item dropdown" id="tableSelectionDropdown">
+								<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"></a>
+								<ul class="dropdown-menu" aria-labelledby="navbarDropdown" >
+									<!-- items populated on page load -->
+								</ul>
+							</div>
+						</div>
+						<div class="col-auto">
+							<span class="navbar-text">Total </span>
+							<span class="navbar-text" id="totalNumberOfRecords"></span>
+							<br>
+							<span class="navbar-text">Selected </span>
+							<span class="navbar-text" id="selectedNumberOfRecords"></span>
+							</span>
+						</div>
+						<div class="col">
+							<form class="d-flex">
+								<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+							</form>
+						</div>
+						<!-- below section (Filter and Add button) are only on Desktop -->
+						<div class="col-auto d-none d-md-block">
+							<button class="btn btn-outline-dark" 
+									id="filterRecordsBtnD" 
+									title="Filter Records">Filter</button>
+							<button class="btn btn-outline-dark" 
+									id="addRecordBtnD" 
+									title="Add Record">Add</button>
+						</div>
+				</div>
+			</nav>
+		</header>
+		
+		<main class="flex-grow-1 overflow-auto">
+			<div class="container">
+				<div class="row table-responsive" id="dataTable">
+					
+				</div>
+			</div>
+		</main>
+
+		<!-- below section (Orderr, Filter and Add button) are only on Mobile -->
+		<div class="container-fluid d-md-none d-flex justify-content-evenly">
+			<button class="btn btn-outline-dark" 
+					id="sortRecordsBtnM" 
+					title="Sort Records">Sort</button>
+			<button class="btn btn-outline-dark" 
+					id="filterRecordsBtnM" 
+					title="Filter Records">Filter</button>
+			<button class="btn btn-outline-dark btn-md mx-1" 
+					id="addRecordBtnM" 
+					title="Add Record">Add</button>
+		</div>
+
+		<footer class="footer bg-light">
+			<div class="container-fluid text-center">
+				<span class="text-muted">&copy; Sławomir Blok 2021</span>
+			</div>
+		</footer>
+
+		<div id="preloader">
+		</div>
+
+		<script src="vendors/jquery/js/jquery-3.5.1.min.js"></script>
+		<script src="vendors/bootstrap/js/bootstrap.bundle.min.js"></script>
+		<script src="js/script.js" type='module'></script>
+	</body>
+
+</html>
