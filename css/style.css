@@ -2,6 +2,10 @@ html, body {
     height: 100%;
 }
 
+#search-box {
+    min-width: 200px;
+}
+
 #preloader {
     position: fixed;
     top: 0;

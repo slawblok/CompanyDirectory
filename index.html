@@ -39,42 +39,88 @@
 						</div>
 						<div class="col">
 							<form class="d-flex">
-								<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+								<input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" id="search-box">
 							</form>
 						</div>
 						<!-- below section (Filter and Add button) are only on Desktop -->
 						<div class="col-auto d-none d-md-block">
-							<button class="btn btn-outline-dark" 
+							<button class="btn" 
 									id="filterRecordsBtnD" 
-									title="Filter Records">Filter</button>
-							<button class="btn btn-outline-dark" 
+									title="Filter Records"><i class="bi-filter-square"></i> Filter</button>
+							<button class="btn"
 									id="addRecordBtnD" 
-									title="Add Record">Add</button>
+									title="Add Record"><i class="bi bi-plus-square"></i> Add</button>
 						</div>
 				</div>
 			</nav>
 		</header>
 		
-		<main class="flex-grow-1 overflow-auto">
-			<div class="container">
-				<div class="row table-responsive" id="dataTable">
-					
+		<main class="flex-grow-1 d-flex flex-column">
+			<!-- below section are only on Desktop -->
+			<div class="container d-none d-md-block" id="sub-header">
+				Table header placeholder for Desktop<br>
+				<div class="nav-item dropdown" id="recordsSelectionDropdown">
+					<a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Select</a>
+					<ul class="dropdown-menu" aria-labelledby="navbarDropdown" >
+						<!-- items populated on page load -->
+						<li><a href="#" class="dropdown-item" id="selectAll">All</a></li>
+						<li><a href="#" class="dropdown-item" id="selectNone">None</a></li>
+						<li><a href="#" class="dropdown-item" id="selectInverse">Inverse</a></li>
+					</ul>
+				</div>
+			</div>
+			<div class="container flex-grow-1 overflow-auto" id="content">
+				<!-- items populated by JavaScript -->
+			</div>
+			<div class="container" id="sub-footer">
+				<!-- below section (Order, Filter and Add buttons) are only on Mobile -->
+				<div class="container d-md-none d-flex justify-content-evenly" >
+					<button class="btn d-none" 
+						id="showRecordsBtnM" 
+						title="Show Records"><i class="bi bi-eye"></i><br>Show</button>
+					<button class="btn" 
+						id="sortRecordsBtnM" 
+						title="Sort Records"><i class="bi bi-sort-down"></i><br>Sort</button>
+					<button class="btn" 
+						id="filterRecordsBtnM" 
+						title="Filter Records"><i class="bi-filter-square"></i><br>Filter</button>
+					<button class="btn" 
+						id="addRecordBtnM" 
+						title="Add Record"><i class="bi bi-plus-square"></i><br>Add</button>
+				</div>
+				<!-- below section are only on Desktop -->
+				<div class="container d-none" id="personnelAtDesktop">
+					<button type="button" class="btn-close" aria-label="Close"></button>
+					<br>
+					Person details:
+					<br>
+					Record ID: <span id="recordId"></span><br>
+					First Name: <span id="firstName"></span><br>
+					Last Name: <span id="lastName"></span><br>
+					Job Title: <span id="jobTitle"></span><br>
+					E-mail: <span id="email"></span><br>
+					Department: <span id="department"></span><br>
+					Location: <span id="location"></span><br>
+				</div>
+				<div class="container d-none" id="departmentAtDesktop">
+					<button type="button" class="btn-close" aria-label="Close"></button>
+					<br>
+					Department details:
+					<br>
+					Record ID: <span id="recordId"></span><br>
+					Name: <span id="name"></span><br>
+					Location: <span id="location"></span><br>
+				</div>
+				<div class="container d-none" id="locationAtDesktop">
+					<button type="button" class="btn-close" aria-label="Close"></button>
+					<br>
+					Location details:
+					<br>
+					Record ID: <span id="recordId"></span><br>
+					Name: <span id="name"></span><br>
 				</div>
 			</div>
 		</main>
-
-		<!-- below section (Orderr, Filter and Add button) are only on Mobile -->
-		<div class="container-fluid d-md-none d-flex justify-content-evenly">
-			<button class="btn btn-outline-dark" 
-					id="sortRecordsBtnM" 
-					title="Sort Records">Sort</button>
-			<button class="btn btn-outline-dark" 
-					id="filterRecordsBtnM" 
-					title="Filter Records">Filter</button>
-			<button class="btn btn-outline-dark btn-md mx-1" 
-					id="addRecordBtnM" 
-					title="Add Record">Add</button>
-		</div>
 
 		<footer class="footer bg-light">
 			<div class="container-fluid text-center">
@@ -83,6 +129,65 @@
 		</footer>
 
 		<div id="preloader">
+		</div>
+
+		<!-- Modals for Mobile to display record details -->
+		<div class="modal fade" id="personnelAtMobile" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Person details</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Record ID: <span id="recordId"></span><br>
+					First Name: <span id="firstName"></span><br>
+					Last Name: <span id="lastName"></span><br>
+					Job Title: <span id="jobTitle"></span><br>
+					E-mail: <span id="email"></span><br>
+					Department: <span id="department"></span><br>
+					Location: <span id="location"></span><br>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
+		</div>
+		<div class="modal fade" id="departmentAtMobile" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Department details</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Record ID: <span id="recordId"></span><br>
+					Name: <span id="name"></span><br>
+					Location: <span id="location"></span><br>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
+		</div>
+		<div class="modal fade" id="locationAtMobile" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Location details</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Record ID: <span id="recordId"></span><br>
+					Name: <span id="name"></span><br>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
 		</div>
 
 		<script src="vendors/jquery/js/jquery-3.5.1.min.js"></script>
