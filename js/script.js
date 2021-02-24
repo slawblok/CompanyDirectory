@@ -29,6 +29,7 @@ var nameTranslations = {
 }
 
 var localRecords;
+var dataTable;
 
 function recordDetailsAtDesktopClose() {
 	// close profile at Desktop
@@ -38,83 +39,75 @@ function recordDetailsAtDesktopClose() {
 	recalculateContentHeight();
 }
 
-function displayRecordsDetails(records, displayAtMobile){
-	// hide profile if any displayed
-	recordDetailsAtDesktopClose();
+function displayRecordsDetails(records){
+
+	// show button for Mobile
+	$('#showRecordsBtnM').removeClass('d-none');
 	
 	// combine records if more than one selected
 	var recordCombined = {};
 	var messageForMultipleEntries = '...multiple entries...';
-	if (records.length > 0) {
-		for (var key in records[0]) {
-			recordCombined[key] = records[0][key];
-		}
-		records.forEach(function(record) {
-			for (var key in record) {
-				if (recordCombined[key] != messageForMultipleEntries) {
-					if (recordCombined[key] != record[key]) {
-						recordCombined[key] = messageForMultipleEntries;
-					}
+	// copy first record as-is
+	for (var key in records[0]) {
+		recordCombined[key] = records[0][key];
+	}
+	// compare with remainings records
+	records.forEach(function(record) {
+		for (var key in record) {
+			if (recordCombined[key] != messageForMultipleEntries) {
+				if (recordCombined[key] != record[key]) {
+					recordCombined[key] = messageForMultipleEntries;
 				}
 			}
-		});
-	}
+		}
+	});
 
 	// update DOM with record details
 	switch (localRecords.table) {
 		case 'personnel': {
 			var container = $('#personnelAtDesktop');
-			container.children('#recordId').text(recordCombined.id);
-			container.children('#firstName').text(recordCombined.firstName);
-			container.children('#lastName').text(recordCombined.lastName);
-			container.children('#jobTitle').text(recordCombined.jobTitle);
-			container.children('#email').text(recordCombined.email);
-			container.children('#department').text(recordCombined.department);
-			container.children('#location').text(recordCombined.location);
+			container.children('#recordId').text(recordCombined.DT_RowId);
+			container.children('#firstName').text(recordCombined[0]);
+			container.children('#lastName').text(recordCombined[1]);
+			container.children('#jobTitle').text(recordCombined[2]);
+			container.children('#email').text(recordCombined[3]);
+			container.children('#department').text(recordCombined[4]);
+			container.children('#location').text(recordCombined[5]);
 			// show profile, but only if Desktop
 			container.addClass('d-md-block');
-			// show profile, but only if Mobile
-			if (!($('#personnelAtDesktop').is(':visible')) && displayAtMobile) {
-				var container = $('#personnelAtMobile .modal-content .modal-body');
-				container.children('#recordId').text(recordCombined.id);
-				container.children('#firstName').text(recordCombined.firstName);
-				container.children('#lastName').text(recordCombined.lastName);
-				container.children('#jobTitle').text(recordCombined.jobTitle);
-				container.children('#email').text(recordCombined.email);
-				container.children('#department').text(recordCombined.department);
-				container.children('#location').text(recordCombined.location);
-				new bootstrap.Modal(document.getElementById('personnelAtMobile')).show();
-			}
+			// Mobile
+			container = $('#personnelAtMobile .modal-content .modal-body');
+			container.children('#recordId').text(recordCombined.DT_RowId);
+			container.children('#firstName').text(recordCombined[0]);
+			container.children('#lastName').text(recordCombined[1]);
+			container.children('#jobTitle').text(recordCombined[2]);
+			container.children('#email').text(recordCombined[3]);
+			container.children('#department').text(recordCombined[4]);
+			container.children('#location').text(recordCombined[5]);	
 		} break;
 		case 'department': {
 			var container = $('#departmentAtDesktop');
-			container.children('#recordId').text(recordCombined.id);
-			container.children('#name').text(recordCombined.name);
-			container.children('#location').text(recordCombined.location);
+			container.children('#recordId').text(recordCombined.DT_RowId);
+			container.children('#name').text(recordCombined[0]);
+			container.children('#location').text(recordCombined[1]);
 			// show profile, but only if Desktop
 			container.addClass('d-md-block');
-			// show profile, but only if Mobile
-			if (!($('#departmentAtDesktop').is(':visible')) && displayAtMobile) {
-				var container = $('#departmentAtMobile .modal-content .modal-body');
-				container.children('#recordId').text(recordCombined.id);
-				container.children('#name').text(recordCombined.name);
-				container.children('#location').text(recordCombined.location);
-				new bootstrap.Modal(document.getElementById('departmentAtMobile')).show();
-			}
+			// Mobile
+			container = $('#departmentAtMobile .modal-content .modal-body');
+			container.children('#recordId').text(recordCombined.DT_RowId);
+			container.children('#name').text(recordCombined[0]);
+			container.children('#location').text(recordCombined[1]);
 		} break;
 		case 'location': {
 			var container = $('#locationAtDesktop');
-			container.children('#recordId').text(recordCombined.id);
-			container.children('#name').text(recordCombined.name);
+			container.children('#recordId').text(recordCombined.DT_RowId);
+			container.children('#name').text(recordCombined[0]);
 			// show profile, but only if Desktop
 			container.addClass('d-md-block');
-			// show profile, but only if Mobile
-			if (!($('#locationAtDesktop').is(':visible')) && displayAtMobile) {
-				var container = $('#locationAtMobile .modal-content .modal-body');
-				container.children('#recordId').text(recordCombined.id);
-				container.children('#name').text(recordCombined.name);
-				new bootstrap.Modal(document.getElementById('locationAtMobile')).show();
-			}
+			// Mobile
+			container = $('#locationAtMobile .modal-content .modal-body');
+			container.children('#recordId').text(recordCombined.DT_RowId);
+			container.children('#name').text(recordCombined[0]);
 		} break;
 	}
 	recalculateContentHeight();
@@ -158,7 +151,9 @@ function selectRecords(selectionType) {
 
 	// update checkbox's
 	$('#content table tbody').children('tr').each(function () {
-		var checkbox = this.children[1].firstChild.firstChild;
+		var td = this.children[1];
+		var div = $(td).children('div')[0];
+		var checkbox = $(div).children('input')[0];
 		localRecords.data.forEach(function(record) {
 			if (record.id == checkbox.id) {
 				checkbox.checked = record.checked;
@@ -176,7 +171,7 @@ function selectRecords(selectionType) {
 		} break;
 		case 'inverse' : {
 			if (selectedRecords.length > 0) {
-				displayRecordsDetails(selectedRecords, false);
+				displayRecordsDetails(selectedRecords);
 			} else {
 				recordDetailsAtDesktopClose();
 			}
@@ -185,73 +180,14 @@ function selectRecords(selectionType) {
 
 }
 
-function markRowHandler(event){
-	var row = event.target.parentElement;
-	var recordId = row.children[1].children[0].children[0].id;
-	var markedRecord = [];
-	localRecords.data.forEach(function(record) {
-		if (record.id == recordId) {
-			markedRecord.push(record);
-		}
-	});
-	// display record details
-	displayRecordsDetails(markedRecord, true);
-}
-
-function checkRowHandler(event){
-	var checkBox = event.target;	
-	var recordId = checkBox.id;
-	var checkBoxStatus = checkBox.checked;
-	var selectedRecords = [];
-
-	// if check box was checked than save this in global variable
-	// this is needed when table will be re-generated after screen resize
-	localRecords.data.forEach(function(record) {
-		if (record.id == recordId) {
-			record['checked'] = checkBoxStatus;
-		}
-		if ('checked' in record) {
-			if (record.checked) {
-				selectedRecords.push(record);
-			}
-		}
-	});
-
-	// update number of selected record fields
-	$('#selectedNumberOfRecords').text(selectedRecords.length);
-
-	// display the record(s) details
-	if (selectedRecords.length > 0) {
-		displayRecordsDetails(selectedRecords, false);
-		// show button for Mobile
-		$('#showRecordsBtnM').removeClass('d-none');
-	} else {
-		recordDetailsAtDesktopClose();
-		// hide button for Mobile
-		$('#showRecordsBtnM').addClass('d-none');
-	}
-}
-
-function generateTable(records, columnsReduction) {
+function generateTable(records) {
 	
 	// determine columns list
-	var fullColumnsList = nameTranslations[records.table].columnsList;
-	var columnsList = {};
-	var numberOfColumns = 2; // 'number' and 'checkbox'
-	var maxNumberOfColumns = numberOfColumns 
-							+ Object.keys(fullColumnsList).length 
-							- columnsReduction;
-	for (var key in fullColumnsList) {
-		if (numberOfColumns >= maxNumberOfColumns) break;
-		columnsList[key] = fullColumnsList[key];
-		numberOfColumns++;
-	};
-
+	var columnsList = nameTranslations[records.table].columnsList;
+	
 	// define columns titles
 	var tableHead = $("<thead></thead>");
 	var columnsTitles = $("<tr></tr>");
-	columnsTitles.append($("<th></th>").text('').attr("scope", "col"));
-	columnsTitles.append($("<th></th>").text('').attr("scope", "col"));
 	for (var key in columnsList) {
 		columnsTitles.append($("<th></th>").text(columnsList[key]).attr("scope", "col"));
 	};
@@ -259,27 +195,12 @@ function generateTable(records, columnsReduction) {
 
 	// define table body
 	var tableBody = $("<tbody></tbody>");
-	var rowNumber = 1;
 	records.data.forEach(function(element) {
 		// define row
-		var row = $("<tr></tr>");
-		// number
-		row.append($("<th></th>").text(rowNumber++).attr("scope", "row").on('click', markRowHandler));
-		// check box
-		var checkBox = $('<input></input').attr("class", "form-check-input")
-											.attr("type", "checkbox")
-											.attr("value", "")
-											.attr("id", element.id)
-											.on('click', checkRowHandler);
-		if ('checked' in element) {
-			checkBox.attr("checked", element.checked);
-		}
-		var div = $('<div></div>').attr("class", "form-check")
-										.append(checkBox);								
-		row.append($("<td></td>").append(div));
+		var row = $("<tr></tr>").attr('id', element.id);
 		// main data
 		for (var key in columnsList){
-			row.append($("<td></td>").text(element[key]).on('click', markRowHandler));
+			row.append($('<td></td>').text(element[key]));
 		}
 		tableBody.append(row);
 	});
@@ -291,36 +212,60 @@ function generateTable(records, columnsReduction) {
 	return table;
 }
 
-function displayRecordsList(records) {
-	
-	// generate table which fit to available width
-	var iteration = 0;
-	do {
-		// generate table
-		var table = generateTable(records, iteration);
-		iteration++;
-		$('#content').html('').append(table);
-		// check widths
-		var tableWidth = $('#content > table').outerWidth(true);
-		var containerWidth = $('#content').width();
-	} while (tableWidth > containerWidth);
-	
-	// count selected records
-	var count = 0;
-	localRecords.data.forEach(function(record) {
-		if ('checked' in record) {
-			if (record.checked) {
-				count++;
-			}
+function getSelectedRecords(dt) {
+	var data = dt.rows( { selected: true } ).data();
+	var selectedRecords = [];
+	for (var key in data) {
+		var item = data[key];
+		if (Array.isArray(item) && 'DT_RowId' in item) {
+			selectedRecords.push(item);
 		}
-	});
-
-	$('#totalNumberOfRecords').text(records.data.length);
-	$('#tableSelectionDropdown > a').text(nameTranslations[records.table].displayName);
-	$('#selectedNumberOfRecords').text(count);
+	}
+	return selectedRecords;
 }
 
-function changeTable(selectedTable){
+function displayRecordsList(records) {
+	// hide modals, which shows record details
+	recordDetailsAtDesktopClose();
+	// hide button for Mobile
+	$('#showRecordsBtnM').addClass('d-none');
+
+	var table = generateTable(records);
+	$('#content').html('').append(table);
+		
+	dataTable = $('#content > table').DataTable({
+		paging: false,
+		responsive: true,
+		scrollY: 300,
+		scrollCollapse: true,
+		colReorder: true,
+		select: {
+			style: 'multi+shift',
+		}
+	})
+	.on('select', function (e, dt, type, indexes) {
+		// update DOM with selected record details
+		displayRecordsDetails(getSelectedRecords(dt));
+	})
+	.on('deselect', function (e, dt, type, indexes) {
+		if (getSelectedRecords(dt).length > 0) {
+			// update DOM with selected record details
+			displayRecordsDetails(getSelectedRecords(dt));
+		} else {
+			// hide modals, which shows record details
+			recordDetailsAtDesktopClose();
+			// hide button for Mobile
+			$('#showRecordsBtnM').addClass('d-none');
+		}
+		
+	});
+	
+	recalculateContentHeight();
+
+	$('#tableSelectionDropdown > a').text(nameTranslations[records.table].displayName);
+}
+
+function getRecords(selectedTable){
 	// request all records
 	$.ajax({
 		url: "php/getRecords.php",
@@ -328,7 +273,7 @@ function changeTable(selectedTable){
 		dataType: 'json',
 		data: {
 			table: selectedTable
-		},		
+		},	
 		success: function(response) {
 			localRecords = response;
 			displayRecordsList(localRecords);
@@ -361,7 +306,10 @@ function recalculateContentHeight(){
 	// calculate total available space inside content element
 	var contentInnerHeight = contentOuterHeight - ($('#content').outerHeight(true) - $('#content').height());
 	
-	$('#content').height(contentInnerHeight);
+	//$('#content').height(contentInnerHeight);
+
+	var maxHeight = contentInnerHeight - 200;
+	$('#content .dataTables_scrollBody').css('max-height', maxHeight);
 }
 
 // ##############################################################################
@@ -382,9 +330,7 @@ $(window).on('load', function () {
 	}
 	
 	// load default table
-	changeTable('personnel');
-
-	recalculateContentHeight();
+	getRecords('personnel');
 
 	// display preloader
 	if ($('#preloader').length) {
@@ -396,14 +342,12 @@ $(window).on('load', function () {
 
 $(window).resize(function() {
 	recalculateContentHeight();
-	displayRecordsList(localRecords);
 });
 
 // action when user click to change the table
 $('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
 	var selectedTable = event.target.attributes.value.value;
-	recordDetailsAtDesktopClose();
-	changeTable(selectedTable);
+	getRecords(selectedTable);
 });
 
 $('#selectAll').on('click', function () {
@@ -419,16 +363,18 @@ $('#selectInverse').on('click', function () {
 });
 
 $('#showRecordsBtnM').on('click', function() {
-	var selectedRecords = [];
-	localRecords.data.forEach(function(record) {
-		// build array of selected records
-		if ('checked' in record) {
-			if (record.checked) {
-				selectedRecords.push(record);
-			}
-		}
-	});
-	displayRecordsDetails(selectedRecords, true);
+	switch (localRecords.table) {
+		case 'personnel' : {
+			new bootstrap.Modal(document.getElementById('personnelAtMobile')).show();
+		} break;
+		case 'department' : {
+			new bootstrap.Modal(document.getElementById('departmentAtMobile')).show();
+		} break;
+		case 'location' : {
+			new bootstrap.Modal(document.getElementById('locationAtMobile')).show();
+		} break;
+		
+	}
 });
 
 $('#personnelAtDesktop button.btn-close').on('click', recordDetailsAtDesktopClose);
