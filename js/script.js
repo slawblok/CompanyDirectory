@@ -31,31 +31,105 @@ var nameTranslations = {
 var localRecords;
 var dataTable;
 
-function recordDetailsAtDesktopClose() {
-	// close profile at Desktop
-	$('#personnelAtDesktop').removeClass('d-md-block');
-	$('#departmentAtDesktop').removeClass('d-md-block');
-	$('#locationAtDesktop').removeClass('d-md-block');
+// ##############################################################################
+// #                        General section                                     # 
+// ##############################################################################
+
+function getRecords(selectedTable){
+	// request all records
+	$.ajax({
+		url: "php/getRecords.php",
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table: selectedTable
+		},	
+		success: function(response) {
+			localRecords = response;
+			displayRecordsList(localRecords);
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			console.log("request failed");
+			console.log(jqXHR);
+		}
+	});
+}
+
+$(window).on('load', function () {
+
+	// populate list of available tables
+	for (var key in nameTranslations) {
+		var link = $('<a></a>')
+					.attr('class', 'dropdown-item')
+					.attr('value', key)
+					.text(nameTranslations[key].displayName);
+		var listItem = $('<li></li>').append(link);
+		$('#tableSelectionDropdown > ul').append(listItem);
+	}
+	
+	// load default table
+	getRecords('personnel');
+
+	initiateColOrderPopover();
+	
+	// display preloader
+	if ($('#preloader').length) {
+		$('#preloader').delay(100).fadeOut('slow', function () {
+			$(this).remove();
+		});
+	}
+});
+
+// action when user click to change the table
+$('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
+	var selectedTable = event.target.attributes.value.value;
+	getRecords(selectedTable);
+});
+
+// ##############################################################################
+// #                        Displaying records                                  # 
+// ##############################################################################
+
+function cloaseRecordDetailsAtDesktop() {
+	Object.keys(nameTranslations).forEach( key => {
+		$('#'+key+'AtDesktop').removeClass('d-md-block');
+	})
 	recalculateContentHeight();
 }
 
-function displayRecordsDetails(records){
+$('#personnelAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
 
-	// show button for Mobile
-	$('#showRecordsBtnM').removeClass('d-none');
+$('#departmentAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
+
+$('#locationAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
+
+$('#showRecordsBtnM').on('click', function() {
+	closeColOrderPopover();
+	var table = localRecords.table;
+	new bootstrap.Modal(document.getElementById(table+'AtMobile')).show();
+});
+
+function displaySelectedRecordsDetails(){
+
+	// get selected records
+	var selectedRows = dataTable.rows( { selected: true } ).data();
+	var selectedRecords = [];
+	for (var i=0; i<selectedRows.length; i++) {
+		selectedRecords.push(selectedRows[i]);
+	}
 	
 	// combine records if more than one selected
 	var recordCombined = {};
 	var messageForMultipleEntries = '...multiple entries...';
 	// copy first record as-is
-	for (var key in records[0]) {
-		recordCombined[key] = records[0][key];
+	for (var key in selectedRecords[0]) {
+		recordCombined[key] = selectedRecords[0][key];
 	}
 	// compare with remainings records
-	records.forEach(function(record) {
-		for (var key in record) {
+	selectedRecords.forEach(function(selectedRecord) {
+		for (var key in selectedRecord) {
 			if (recordCombined[key] != messageForMultipleEntries) {
-				if (recordCombined[key] != record[key]) {
+				if (recordCombined[key] != selectedRecord[key]) {
 					recordCombined[key] = messageForMultipleEntries;
 				}
 			}
@@ -63,121 +137,23 @@ function displayRecordsDetails(records){
 	});
 
 	// update DOM with record details
-	switch (localRecords.table) {
-		case 'personnel': {
-			var container = $('#personnelAtDesktop');
-			container.children('#recordId').text(recordCombined.DT_RowId);
-			container.children('#firstName').text(recordCombined[0]);
-			container.children('#lastName').text(recordCombined[1]);
-			container.children('#jobTitle').text(recordCombined[2]);
-			container.children('#email').text(recordCombined[3]);
-			container.children('#department').text(recordCombined[4]);
-			container.children('#location').text(recordCombined[5]);
-			// show profile, but only if Desktop
-			container.addClass('d-md-block');
-			// Mobile
-			container = $('#personnelAtMobile .modal-content .modal-body');
-			container.children('#recordId').text(recordCombined.DT_RowId);
-			container.children('#firstName').text(recordCombined[0]);
-			container.children('#lastName').text(recordCombined[1]);
-			container.children('#jobTitle').text(recordCombined[2]);
-			container.children('#email').text(recordCombined[3]);
-			container.children('#department').text(recordCombined[4]);
-			container.children('#location').text(recordCombined[5]);	
-		} break;
-		case 'department': {
-			var container = $('#departmentAtDesktop');
-			container.children('#recordId').text(recordCombined.DT_RowId);
-			container.children('#name').text(recordCombined[0]);
-			container.children('#location').text(recordCombined[1]);
-			// show profile, but only if Desktop
-			container.addClass('d-md-block');
-			// Mobile
-			container = $('#departmentAtMobile .modal-content .modal-body');
-			container.children('#recordId').text(recordCombined.DT_RowId);
-			container.children('#name').text(recordCombined[0]);
-			container.children('#location').text(recordCombined[1]);
-		} break;
-		case 'location': {
-			var container = $('#locationAtDesktop');
-			container.children('#recordId').text(recordCombined.DT_RowId);
-			container.children('#name').text(recordCombined[0]);
-			// show profile, but only if Desktop
-			container.addClass('d-md-block');
-			// Mobile
-			container = $('#locationAtMobile .modal-content .modal-body');
-			container.children('#recordId').text(recordCombined.DT_RowId);
-			container.children('#name').text(recordCombined[0]);
-		} break;
-	}
+	var table = localRecords.table;
+	$('#'+table+'AtDesktop').children('#recordId').text(recordCombined.DT_RowId);
+	$('#'+table+'AtMobile .modal-content .modal-body').children('#recordId').text(recordCombined.DT_RowId);
+	Object.keys(nameTranslations[table]['columnsList']).forEach( (key, index) => {
+		var currentIndex = dataTable.colReorder.transpose( index );
+		var value = recordCombined[currentIndex];
+		$('#'+table+'AtDesktop').children('#'+key).text(value);
+		$('#'+table+'AtMobile .modal-content .modal-body').children('#'+key).text(value);
+	});
+
+	// show profile for Desktop
+	$('#'+table+'AtDesktop').addClass('d-md-block');
+	
+	// show button for Mobile
+	$('#showRecordsBtnM').removeClass('d-none');
+
 	recalculateContentHeight();
-}
-
-function selectRecords(selectionType) {
-	// update selection in local records
-	// and optionaly build array of selected records
-	var selectedRecords = [];
-	localRecords.data.forEach(function(record) {
-		switch(selectionType) {
-			case 'all' :{
-				record['checked'] = true;
-			} break;
-			case 'none' :{
-				record['checked'] = false;
-			} break;
-			case 'inverse' :{
-				if ('checked' in record) {
-					// if key exist
-					if (record.checked) {
-						// and set true, then change to false
-						record['checked'] = false;
-					} else {
-						// and set false, then change to true
-						record['checked'] = true;
-					}
-				} else {
-					// key does not exist, then assume false and change to true
-					record['checked'] = true;
-				}
-				// build array of selected records
-				if ('checked' in record) {
-					if (record.checked) {
-						selectedRecords.push(record);
-					}
-				}
-			} break;
-		}
-	});
-
-	// update checkbox's
-	$('#content table tbody').children('tr').each(function () {
-		var td = this.children[1];
-		var div = $(td).children('div')[0];
-		var checkbox = $(div).children('input')[0];
-		localRecords.data.forEach(function(record) {
-			if (record.id == checkbox.id) {
-				checkbox.checked = record.checked;
-			}
-		});
-	});
-
-	// decide how to update display
-	switch(selectionType) {
-		case 'all': {
-			recordDetailsAtDesktopClose();
-		} break;
-		case 'none': {
-			recordDetailsAtDesktopClose();
-		} break;
-		case 'inverse' : {
-			if (selectedRecords.length > 0) {
-				displayRecordsDetails(selectedRecords);
-			} else {
-				recordDetailsAtDesktopClose();
-			}
-		} break;
-	}
-
 }
 
 function generateTable(records) {
@@ -212,173 +188,344 @@ function generateTable(records) {
 	return table;
 }
 
-function getSelectedRecords(dt) {
-	var data = dt.rows( { selected: true } ).data();
-	var selectedRecords = [];
-	for (var key in data) {
-		var item = data[key];
-		if (Array.isArray(item) && 'DT_RowId' in item) {
-			selectedRecords.push(item);
-		}
-	}
-	return selectedRecords;
-}
-
 function displayRecordsList(records) {
-	// hide modals, which shows record details
-	recordDetailsAtDesktopClose();
+	// hide modals, popup
+	cloaseRecordDetailsAtDesktop();
+	closeColOrderPopover();
+
 	// hide button for Mobile
 	$('#showRecordsBtnM').addClass('d-none');
 
 	var table = generateTable(records);
 	$('#content').html('').append(table);
-		
+	
+	// DataTable uses below extensions:
+	// - Responsive
+	// - ColReorder
+	// - Select
 	dataTable = $('#content > table').DataTable({
 		paging: false,
-		responsive: true,
 		scrollY: 300,
 		scrollCollapse: true,
+		"drawCallback": function(settings, json) {
+			closeColOrderPopover();
+			recalculateContentHeight();
+		},
+		responsive: true,
 		colReorder: true,
 		select: {
-			style: 'multi+shift',
-		}
+			style: 'multi+shift'
+		},
 	})
-	.on('select', function (e, dt, type, indexes) {
-		// update DOM with selected record details
-		displayRecordsDetails(getSelectedRecords(dt));
-	})
+	.on('select', displaySelectedRecordsDetails)
 	.on('deselect', function (e, dt, type, indexes) {
-		if (getSelectedRecords(dt).length > 0) {
-			// update DOM with selected record details
-			displayRecordsDetails(getSelectedRecords(dt));
+		// check if 1 or more 1 selected
+		if (dt.rows( { selected: true } ).data().length > 0) {
+			displaySelectedRecordsDetails();
 		} else {
-			// hide modals, which shows record details
-			recordDetailsAtDesktopClose();
+			// hide modals, which shows record details at Desktop
+			cloaseRecordDetailsAtDesktop();
 			// hide button for Mobile
 			$('#showRecordsBtnM').addClass('d-none');
 		}
-		
 	});
 	
-	recalculateContentHeight();
-
 	$('#tableSelectionDropdown > a').text(nameTranslations[records.table].displayName);
 }
 
-function getRecords(selectedTable){
-	// request all records
-	$.ajax({
-		url: "php/getRecords.php",
-		type: 'POST',
-		dataType: 'json',
-		data: {
-			table: selectedTable
-		},	
-		success: function(response) {
-			localRecords = response;
-			displayRecordsList(localRecords);
-		},
-		error: function(jqXHR, textStatus, errorThrown) {
-			console.log("request failed");
-			console.log(jqXHR);
+function getHeighConsumedByOtherElements(element) {
+	
+	// calculate total height consumed by all visible siblings elements
+	var heightOfSiblings = 0;
+	element.siblings().each( function(sibling) {
+		// count only visible elements, which are not popover
+		if ($(this).is(':visible') && !$(this).hasClass('popover')) {
+			heightOfSiblings += $(this).outerHeight(true);
 		}
 	});
+	
+	// calculate total thickness of top and bottom
+	// margins, borders and paddings of parent element
+	var parent = element.parent();
+	var parentThickness = -parent.height();
+	if (parent.is('body')) {
+		// somehow there is exception for <body>
+		// its height must be without margins
+		// this is probably due to margin collapse
+		parentThickness += parent.outerHeight();
+	} else {
+		parentThickness += parent.outerHeight(true);
+	}
+
+	// heigh consumed at element level
+	var heightConsumed = heightOfSiblings + parentThickness;
+
+	// check for root element
+	if (parent.is('html')) {
+		// if the element is root than finish the recursive calculation
+		return heightConsumed;
+	} else {
+		// go to upper parent (next iteration)
+		return heightConsumed + getHeighConsumedByOtherElements(parent);
+	}
+	
 }
 
 function recalculateContentHeight(){
-	var htmlInnerHeight = $('html').height();
-	
-	// calculate space available for entire body element - no visible elements in html except body
-	var bodyOuterHeight = htmlInnerHeight;
-	
-	// calculate total available space inside body element
-	var bodyInnerHeigh = bodyOuterHeight - ($('body').outerHeight() - $('body').height());
-	
-	// calculate space available for entire main element
-	var mainOuterHeight = bodyInnerHeigh - $('header').outerHeight(true) - $('footer').outerHeight(true);
-	
-	// calculate total available space inside main element
-	var mainInnerHeight = mainOuterHeight - ($('main').outerHeight(true) - $('main').height());
-	
-	// calculate space available for content element
-	var contentOuterHeight = mainInnerHeight - $('#sub-header').outerHeight(true) - $('#sub-footer').outerHeight(true);
-	
-	// calculate total available space inside content element
-	var contentInnerHeight = contentOuterHeight - ($('#content').outerHeight(true) - $('#content').height());
-	
-	//$('#content').height(contentInnerHeight);
+	var contentElement = $('#content .dataTables_scrollBody');
+	// check if the element has parents, otherwise recursive function will hang
+	if (contentElement.parents().length > 0) {
+		// recursive calculations up to root element
+		var heightOfOtherElements = getHeighConsumedByOtherElements(contentElement);
+		var heighOfRootElement = $('html').outerHeight(true);
+		var outerHeight = heighOfRootElement - heightOfOtherElements;
 
-	var maxHeight = contentInnerHeight - 200;
-	$('#content .dataTables_scrollBody').css('max-height', maxHeight);
+		// heigh calculation uses DOM element properies,
+		// thus need to check if heigh is > 0, it not 
+		// if not, then try again after some delay
+		if (outerHeight > 0) {
+			$('#content .dataTables_scrollBody').css('max-height', outerHeight);
+			//console.log('Content height calculated to: ' + outerHeight);
+		} else {
+			//console.log('Attempt to content height calculation, but it is negative: ' + outerHeight + '. Next attempt after 100ms.');
+			setTimeout( function() {
+				recalculateContentHeight();
+			}, 100);
+		}
+	} else {
+		//console.log('Attempt to content height calculation, but no parents.');
+	}
+	
 }
 
-// ##############################################################################
-// #                        Events handlers                                     # 
-// ##############################################################################
-
-$(window).on('load', function () {
-
-	// populate list of available tables
-	for (var key in nameTranslations) {
-		var link = $('<a></a>')
-					.attr('class', 'dropdown-item')
-					.attr('href', '#')
-					.attr('value', key)
-					.text(nameTranslations[key].displayName);
-		var listItem = $('<li></li>').append(link);
-		$('#tableSelectionDropdown > ul').append(listItem);
-	}
-	
-	// load default table
-	getRecords('personnel');
-
-	// display preloader
-	if ($('#preloader').length) {
-		$('#preloader').delay(100).fadeOut('slow', function () {
-			$(this).remove();
-		});
-	}
-});
-
 $(window).resize(function() {
+	closeColOrderPopover();
 	recalculateContentHeight();
 });
 
-// action when user click to change the table
-$('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
-	var selectedTable = event.target.attributes.value.value;
-	getRecords(selectedTable);
-});
+// ##############################################################################
+// #                        Selecting records                                   # 
+// ##############################################################################
 
 $('#selectAll').on('click', function () {
-	selectRecords('all');
+	dataTable.rows({ search:'applied' }).select();
 });
 
 $('#selectNone').on('click', function () {
-	selectRecords('none');
+	dataTable.rows().deselect();
 });
 
 $('#selectInverse').on('click', function () {
-	selectRecords('inverse');
+	var selectedIndexes = dataTable.rows({selected: true}).indexes();
+	// select all, than unselect those, which were selected
+	dataTable.rows({ search:'applied' }).select().rows(selectedIndexes).deselect();
 });
 
-$('#showRecordsBtnM').on('click', function() {
-	switch (localRecords.table) {
-		case 'personnel' : {
-			new bootstrap.Modal(document.getElementById('personnelAtMobile')).show();
-		} break;
-		case 'department' : {
-			new bootstrap.Modal(document.getElementById('departmentAtMobile')).show();
-		} break;
-		case 'location' : {
-			new bootstrap.Modal(document.getElementById('locationAtMobile')).show();
-		} break;
-		
+// ##############################################################################
+// #                        Sorting records                                     # 
+// ##############################################################################
+
+$('#sortRecordsBtnM').on('click', function() {
+	
+	closeColOrderPopover();
+	
+	// show Modal
+	new bootstrap.Modal(document.getElementById('sortAtMobile')).show();
+	
+	// get current order and columns visibility
+	var currentOrder = dataTable.order();
+	var columnsVisibility = dataTable.columns().visible();
+	var columnsHidden = dataTable.columns().responsiveHidden();
+
+	// pupulate and select columns
+	var currentColumnIndex = currentOrder[0][0];
+	$('#sortByColumns').html('');
+	dataTable.columns().header().each(function(value, index) {
+		// list only visible(enabled) columns
+		if (columnsVisibility[index]) {
+			var option = $('<option></option>').val(index);
+			if (index == currentColumnIndex) {
+				option.prop('selected', true);
+			}
+			if (columnsHidden[index]) {
+				option.text(value.innerText);
+			} else {
+				option.text(value.innerText + ' (hidden)');
+			}
+			$('#sortByColumns').append(option);
+		}
+	});
+
+	// select direction
+	var currentOrderDirection = currentOrder[0][1];
+	$('#sortDirection option[value="'+currentOrderDirection+'"]').prop('selected', true);
+	
+});
+
+$('#sortByColumns').on('change', function() {
+	// show message if user wants to sort by hidden column
+	var columsnVisibility = dataTable.columns().responsiveHidden();
+	if (columsnVisibility[$('#sortByColumns').val()]) {
+		$('#sortAtMobile .modal-body div:last-child').addClass('d-none');
+	} else {
+		$('#sortAtMobile .modal-body div:last-child').removeClass('d-none');
 	}
 });
 
-$('#personnelAtDesktop button.btn-close').on('click', recordDetailsAtDesktopClose);
+$('#sortConfirmBtnM').on('click', function() {
+	var selectedColumnIndex = parseInt($('#sortByColumns').val());
+	var selectedOrderDirection = $('#sortDirection').val();
+	var columnsVisibility = dataTable.columns().responsiveHidden();
+	if (columnsVisibility[selectedColumnIndex]) {
+		dataTable.order( [selectedColumnIndex, selectedOrderDirection] ).draw();
+	} else {
+		// if selected column is hidden than move it to most left position
+		dataTable.colReorder.move(selectedColumnIndex, 0);
+		dataTable.order( [0, selectedOrderDirection] ).draw();
+	}
+});
 
-$('#departmentAtDesktop button.btn-close').on('click', recordDetailsAtDesktopClose);
+// ##############################################################################
+// #                        Columns ordering                                    # 
+// ##############################################################################
 
-$('#locationAtDesktop button.btn-close').on('click', recordDetailsAtDesktopClose);
+function updateContentForColOrder() {
+	// handler to lists at Modal (for Mobile) and Popover (for Desktop)
+	var content = $('#colOrderAtMobile, #colOrderAtDesktop');
+	var list = content.find('ul').html('');
+	
+	// generate columns list based on actual column order and visibility
+	var columnsVisibility = dataTable.columns().visible();
+	var columnsList = {column: []};
+	dataTable.columns().header().each(function(value, currentTndex) {
+		columnsList.column.push({
+			// convert to original index
+			// convert the index from current to original (prior potential reordering)
+			index: dataTable.colReorder.transpose(currentTndex, 'toOriginal'),
+			name: value.innerText,
+			visible: columnsVisibility[currentTndex]
+		});	
+	});
+
+	// use Handlebar to generate HTML
+	const source = $('#colOrderTemplate').html();
+	const template = Handlebars.compile(source);
+	list.append(template(columnsList));
+}
+
+function getContentForColOrderPopover() {
+	updateContentForColOrder();
+	return $('#colOrderAtDesktop').html();
+}
+
+function updateColumnsVisibility(event){
+	var columnIndex = event.target.value;
+	// convert the index from original to current (after potential reordering)
+	var currentColumnIndex = dataTable.colReorder.transpose(parseInt(columnIndex));
+	var visibility = event.target.checked;
+	dataTable.column(currentColumnIndex).visible(visibility);
+}
+
+function updateColumnsOrder(event, ui) {
+	// get new order of columns from sortable list and convert it to array format acceptable by DataTable
+	var newOrder = ui.item[0].parentNode;
+	var newOrderArray = [];
+	$(newOrder).children().each(function(index, item) {
+		newOrderArray.push(item.value);
+	});
+	// apply new order, 'true' parameter indicates
+	// that the indexes passed in are the original indexes
+	dataTable.colReorder.order(newOrderArray, true);
+}
+
+function moveUpColumn(event) {
+	// get button from element to move
+	var button;
+	if ($(event.target).is('button')) {
+		button = event.target;
+	} else {
+		button = event.target.parentElement;
+	}
+	// convert the index from original to current (after potential reordering)
+	var currentColumnIndex = dataTable.colReorder.transpose(parseInt(button.value)); 
+	var targetColumnIndex = currentColumnIndex - 1;
+	if (targetColumnIndex < 0) targetColumnIndex = 0;
+	// reorder columns
+	dataTable.colReorder.move(currentColumnIndex, targetColumnIndex);
+	// reorder list
+	var elementToMove = button.closest('li');
+	var upperElement = $(elementToMove).prev();
+	if (upperElement != null) {
+		$(elementToMove).insertBefore(upperElement);
+	}
+}
+
+function moveDownColumn(event) {
+	// get button from element to move
+	var button;
+	if ($(event.target).is('button')) {
+		button = event.target;
+	} else {
+		button = event.target.parentElement;
+	}
+	// convert the index from original to current (after potential reordering)
+	var currentColumnIndex = dataTable.colReorder.transpose(parseInt(button.value)); 
+	var targetColumnIndex = currentColumnIndex + 1;
+	var maxNumberOfColumns = dataTable.columns()[0].length - 1;
+	if (targetColumnIndex >= maxNumberOfColumns) targetColumnIndex = maxNumberOfColumns;
+	// reorder columns
+	dataTable.colReorder.move(currentColumnIndex, targetColumnIndex);
+	// reorder list
+	var elementToMove = button.closest('li');
+	var bottomElement = $(elementToMove).next();
+	if (bottomElement != null) {
+		$(elementToMove).insertAfter(bottomElement);
+	}
+}
+
+function closeColOrderPopover() {
+	var trigger = document.getElementById('colOrderPopoverTrigger');
+	var popover = bootstrap.Popover.getInstance(trigger);
+	popover.hide();
+}
+
+function assignActionsForColOrder(content) {
+	// makes list sortable and assing action on change
+	content.find('ul').sortable({update: updateColumnsOrder});
+	// assing action to checkboxes
+	content.find('input').on('click', updateColumnsVisibility);
+	// assing action to up/down buttons
+	content.find('.btn-up').on('click', moveUpColumn);
+	content.find('.btn-down').on('click', moveDownColumn);
+}
+
+function initiateColOrderPopover() {
+	// add elements and attributies to Popup allowed elements
+	bootstrap.Tooltip.Default.allowList.button = ['type', 'value'];
+	bootstrap.Tooltip.Default.allowList.input = ['type', 'checked', 'value'];
+	bootstrap.Tooltip.Default.allowList.label = [];
+	bootstrap.Tooltip.Default.allowList.li = ['value'];
+
+	// initialize popover
+	var trigger = document.getElementById('colOrderPopoverTrigger');
+	new bootstrap.Popover(trigger, {
+		content: getContentForColOrderPopover,
+		html: true,
+	});
+	trigger.addEventListener('shown.bs.popover', function () {
+		// once content of popover is created, then
+		// it is feasible to assign some actions to its elements
+		var popover = bootstrap.Popover.getInstance(this);
+		var content = $(popover.tip);
+		// action assigned to close buttons
+		content.find('.btn-close').on('click', closeColOrderPopover);
+		assignActionsForColOrder(content);
+	});
+}
+
+$('#colOrderBtnM').on('click', function() {
+	closeColOrderPopover();
+	updateContentForColOrder();
+	assignActionsForColOrder($('#colOrderAtMobile'));
+	new bootstrap.Modal(document.getElementById('colOrderAtMobile')).show();
+});
