@@ -17,21 +17,24 @@
 		<script src="vendors/handlebars/js/handlebars.min.js"></script>
 		<script id="colOrderTemplate" type="text/x-handlebars-template">
 			{{#each column}}
-			<li class="list-group-item justify-content-between" value={{this.index}}>
-				<div class="container">
-					<div class="row">
-						<div class="col form-check">
-							<input class="form-check-input" type="checkbox" value={{this.index}} {{#if this.visible}}checked{{/if}}>
-							<label class="form-check-label">{{this.name}}</label>
-						</div>
-						<div class="col d-grid gap-2 d-md-flex justify-content-md-end">
-							<button class="btn btn-up" type="button" value={{this.index}}>
+			<li class="list-group-item" value={{this.index}}>
+				<div class="row d-flex flex-nowrap align-items-center">
+					<div class="col d-flex flex-nowrap">
+						<input class="form-check-input me-1" type="checkbox" value={{this.index}} {{#if this.visible}}checked{{/if}}>
+						<span class="text-nowrap">{{this.name}}</span>
+					</div>
+					<div class="col-auto d-md-none">
+						<div class="d-grid gap-2 d-flex justify-content-end">
+							<button class="btn btn-lg btn-up" type="button" value={{this.index}}>
 								<i class="bi bi-arrow-up-circle"></i>
 							</button>
-							<button class="btn btn-down" type="button" value={{this.index}}>
+							<button class="btn btn-lg btn-down" type="button" value={{this.index}}>
 								<i class="bi bi-arrow-down-circle"></i>
 							</button>
 						</div>
+					</div>
+					<div class="col-auto d-none d-md-block">
+						<i class="bi bi-list"></i>
 					</div>
 				</div>
 			</li>
@@ -78,6 +81,7 @@
 						  	</li>
 							<li class="nav-item">
 								<a class="nav-link" role="button" id="colOrderBtn"
+									title="Columns order and visibility"
 									data-bs-toggle="popover" 
 									data-bs-container="body" 
 									data-bs-placement="bottom">
@@ -88,18 +92,16 @@
 					</div>
 				
 					<!-- below section (Columns, Filter and Add button) are only on Desktop -->
-					<form class="d-none d-md-flex flex-nowrap order-3">
-						<button class="btn"
-								type="button"
-								id="filterRecordsBtnD" 
+					<div class="navbar-nav d-none d-md-flex flex-nowrap order-3">
+						<a class="nav-link text-nowrap" role="button" id="filterRecordsBtnD" 
 								title="Filter Records">
-								<i class="bi-filter-square"></i> Filter</button>
-						<button class="btn"
-								type="button"
-								id="addRecordBtnD" 
+								<i class="bi bi-filter-square"></i> Filter
+						</a>
+						<a  class="nav-link text-nowrap" role="button" id="addRecordBtnD" 
 								title="Add Record">
-								<i class="bi bi-plus-square"></i> Add</button>
-					</form>
+								<i class="bi bi-plus-square"></i> Add
+						</a>
+					</div>
 				</div>
 			</nav>
 		</header>
@@ -244,7 +246,7 @@
 					<div class="mb-3">
 						<label for="sortByColumns" class="form-label">Sort by column:</label>
 						<select class="form-select" id="sortByColumns" aria-label="Sort by">
-							<!-- populated by javascript-->
+							<!-- options populated by javascript-->
 						</select>
 					</div>
 					<div class="mb-3">
@@ -271,10 +273,10 @@
 			<div class="container">
 				<div class="row justify-content-between">
 					<div class="col-auto">
-						<h5>Columns order</h5>
+						<p>Set column visibility<br> by set checkboxes.</p>
 					</div>
 					<div class="col-auto">
-						<button type="button" class="btn-close"></button>
+						<p>Set columns in desired order <br> using drag and drop technique.</p>
 					</div>
 				</div>
 				<div class="row">
@@ -282,6 +284,11 @@
 						<ul class="list-group">
 							<!-- items populated by JavaScript -->
 						</ul>
+					</div>
+				</div>
+				<div class="row justify-content-end">
+					<div class="col-auto mt-3">
+						<button type="button" class="btn btn-primary closeBtn">Close</button>
 					</div>
 				</div>
 			</div>
@@ -292,14 +299,26 @@
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="colOrderModalLabel">Columns order</h5>
+					<h5 class="modal-title" id="colOrderModalLabel">Columns order and visibility</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="container">
-						<ul class="list-group">
-							<!-- items populated by JavaScript -->
-						</ul>
+						<div class="row justify-content-between">
+							<div class="col-auto">
+								<p>Set column visibility by set checkboxes.</p>
+							</div>
+							<div class="col-auto">
+								<p>Set columns in desired order using up and down arrows.</p>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col">
+								<ul class="list-group">
+									<!-- items populated by JavaScript -->
+								</ul>
+							</div>
+						</div>
 					</div>
 				</div>
 				<div class="modal-footer">

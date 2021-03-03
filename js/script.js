@@ -532,7 +532,7 @@ function initiateColOrderPopover() {
 	// add elements and attributies to Popup allowed elements
 	bootstrap.Tooltip.Default.allowList.button = ['type', 'value'];
 	bootstrap.Tooltip.Default.allowList.input = ['type', 'checked', 'value'];
-	bootstrap.Tooltip.Default.allowList.label = [];
+	bootstrap.Tooltip.Default.allowList.label = ['for'];
 	bootstrap.Tooltip.Default.allowList.li = ['value'];
 
 	// initialize popover
@@ -548,8 +548,10 @@ function initiateColOrderPopover() {
 		var popover = bootstrap.Popover.getInstance(this);
 		var content = $(popover.tip);
 		// action assigned to close buttons
-		content.find('.btn-close').on('click', closeColOrderPopover);
+		content.find('.closeBtn').on('click', closeColOrderPopover);
 		assignActionsForColOrder(content);
+		// adjust width, by removing max-widht property
+		$(content).css('max-width', '1000px');
 	});
 }
 
