@@ -206,9 +206,9 @@ function displayRecordsList(records) {
 	dataTable = $('#content > table').DataTable({
 		paging: false,
 		scrollY: 300,
+		scrollX: false,
 		scrollCollapse: true,
 		"drawCallback": function(settings, json) {
-			closeColOrderPopover();
 			recalculateContentHeight();
 		},
 		responsive: true,
@@ -216,6 +216,8 @@ function displayRecordsList(records) {
 		select: {
 			style: 'multi+shift'
 		},
+		searchPanes: true,
+		dom: 'lrtp'			// remove 'i' to stop displaying bottom infor
 	})
 	.on('select', displaySelectedRecordsDetails)
 	.on('deselect', function (e, dt, type, indexes) {
@@ -230,7 +232,7 @@ function displayRecordsList(records) {
 		}
 	});
 	
-	$('#tableSelectionDropdown > a').text(nameTranslations[records.table].displayName);
+	$('#tableSelectionDropdown > a > span').text(nameTranslations[records.table].displayName);
 }
 
 function getHeighConsumedByOtherElements(element) {
@@ -284,7 +286,7 @@ function recalculateContentHeight(){
 		// thus need to check if heigh is > 0, it not 
 		// if not, then try again after some delay
 		if (outerHeight > 0) {
-			$('#content .dataTables_scrollBody').css('max-height', outerHeight);
+			contentElement.css('max-height', outerHeight);
 			//console.log('Content height calculated to: ' + outerHeight);
 		} else {
 			//console.log('Attempt to content height calculation, but it is negative: ' + outerHeight + '. Next attempt after 100ms.');
@@ -295,6 +297,10 @@ function recalculateContentHeight(){
 	} else {
 		//console.log('Attempt to content height calculation, but no parents.');
 	}
+	// small tweek to content/table width, 
+	// Probably due to error in DataTable library, table is 1.317px wider that its container
+	// thus horozontal scroll is shown. This turn off the horizontla scroll.
+	contentElement.css('overflow-x', 'hidden');
 	
 }
 
@@ -303,22 +309,50 @@ $(window).resize(function() {
 	recalculateContentHeight();
 });
 
+$('#navbarSupportedContent').on('shown.bs.collapse',function() {
+	recalculateContentHeight();
+});
+
+$('#navbarSupportedContent').on('hidden.bs.collapse',function() {
+	recalculateContentHeight();
+});
+
+$('#navbarSupportedContent li.dropdown').on('shown.bs.dropdown',function() {
+	recalculateContentHeight();
+});
+
+$('#navbarSupportedContent  li.dropdown').on('hidden.bs.dropdown',function() {
+	recalculateContentHeight();
+});
+
+// ##############################################################################
+// #                             Searching                                      # 
+// ##############################################################################
+
+$('#searchBox > input').on('keyup', function(event) {
+	dataTable.search(event.target.value).draw();
+});
+
+$('#searchBox > input').on('change', function(event) {
+	dataTable.search(event.target.value).draw();
+});
+
 // ##############################################################################
 // #                        Selecting records                                   # 
 // ##############################################################################
 
 $('#selectAll').on('click', function () {
-	dataTable.rows({ search:'applied' }).select();
+	dataTable.rows({ search:'applied' }).select().draw();
 });
 
 $('#selectNone').on('click', function () {
-	dataTable.rows().deselect();
+	dataTable.rows().deselect().draw();
 });
 
 $('#selectInverse').on('click', function () {
 	var selectedIndexes = dataTable.rows({selected: true}).indexes();
 	// select all, than unselect those, which were selected
-	dataTable.rows({ search:'applied' }).select().rows(selectedIndexes).deselect();
+	dataTable.rows({ search:'applied' }).select().rows(selectedIndexes).deselect().draw();
 });
 
 // ##############################################################################
@@ -413,19 +447,6 @@ function updateContentForColOrder() {
 	list.append(template(columnsList));
 }
 
-function getContentForColOrderPopover() {
-	updateContentForColOrder();
-	return $('#colOrderAtDesktop').html();
-}
-
-function updateColumnsVisibility(event){
-	var columnIndex = event.target.value;
-	// convert the index from original to current (after potential reordering)
-	var currentColumnIndex = dataTable.colReorder.transpose(parseInt(columnIndex));
-	var visibility = event.target.checked;
-	dataTable.column(currentColumnIndex).visible(visibility);
-}
-
 function updateColumnsOrder(event, ui) {
 	// get new order of columns from sortable list and convert it to array format acceptable by DataTable
 	var newOrder = ui.item[0].parentNode;
@@ -435,7 +456,15 @@ function updateColumnsOrder(event, ui) {
 	});
 	// apply new order, 'true' parameter indicates
 	// that the indexes passed in are the original indexes
-	dataTable.colReorder.order(newOrderArray, true);
+	dataTable.colReorder.order(newOrderArray, true).draw();
+}
+
+function updateColumnsVisibility(event){
+	var columnIndex = event.target.value;
+	// convert the index from original to current (after potential reordering)
+	var currentColumnIndex = dataTable.colReorder.transpose(parseInt(columnIndex));
+	var visibility = event.target.checked;
+	dataTable.column(currentColumnIndex).visible(visibility).draw();
 }
 
 function moveUpColumn(event) {
@@ -451,7 +480,7 @@ function moveUpColumn(event) {
 	var targetColumnIndex = currentColumnIndex - 1;
 	if (targetColumnIndex < 0) targetColumnIndex = 0;
 	// reorder columns
-	dataTable.colReorder.move(currentColumnIndex, targetColumnIndex);
+	dataTable.colReorder.move(currentColumnIndex, targetColumnIndex).draw();
 	// reorder list
 	var elementToMove = button.closest('li');
 	var upperElement = $(elementToMove).prev();
@@ -474,19 +503,13 @@ function moveDownColumn(event) {
 	var maxNumberOfColumns = dataTable.columns()[0].length - 1;
 	if (targetColumnIndex >= maxNumberOfColumns) targetColumnIndex = maxNumberOfColumns;
 	// reorder columns
-	dataTable.colReorder.move(currentColumnIndex, targetColumnIndex);
+	dataTable.colReorder.move(currentColumnIndex, targetColumnIndex).draw();
 	// reorder list
 	var elementToMove = button.closest('li');
 	var bottomElement = $(elementToMove).next();
 	if (bottomElement != null) {
 		$(elementToMove).insertAfter(bottomElement);
 	}
-}
-
-function closeColOrderPopover() {
-	var trigger = document.getElementById('colOrderPopoverTrigger');
-	var popover = bootstrap.Popover.getInstance(trigger);
-	popover.hide();
 }
 
 function assignActionsForColOrder(content) {
@@ -499,6 +522,12 @@ function assignActionsForColOrder(content) {
 	content.find('.btn-down').on('click', moveDownColumn);
 }
 
+function closeColOrderPopover() {
+	var trigger = document.getElementById('colOrderBtn');
+	var popover = bootstrap.Popover.getInstance(trigger);
+	popover.hide();
+}
+
 function initiateColOrderPopover() {
 	// add elements and attributies to Popup allowed elements
 	bootstrap.Tooltip.Default.allowList.button = ['type', 'value'];
@@ -507,10 +536,11 @@ function initiateColOrderPopover() {
 	bootstrap.Tooltip.Default.allowList.li = ['value'];
 
 	// initialize popover
-	var trigger = document.getElementById('colOrderPopoverTrigger');
+	var trigger = document.getElementById('colOrderBtn');
 	new bootstrap.Popover(trigger, {
-		content: getContentForColOrderPopover,
+		content: function() {return $('#colOrderAtDesktop').html()},
 		html: true,
+		trigger: 'manual'
 	});
 	trigger.addEventListener('shown.bs.popover', function () {
 		// once content of popover is created, then
@@ -523,9 +553,31 @@ function initiateColOrderPopover() {
 	});
 }
 
-$('#colOrderBtnM').on('click', function() {
-	closeColOrderPopover();
+$('#colOrderBtn').on('click', function() {
 	updateContentForColOrder();
-	assignActionsForColOrder($('#colOrderAtMobile'));
-	new bootstrap.Modal(document.getElementById('colOrderAtMobile')).show();
+	// check if nav bar if collapsed (Mobile)
+	if ($('nav .navbar-toggler').is(':visible')) {
+		// show Modal
+		assignActionsForColOrder($('#colOrderAtMobile'));
+		new bootstrap.Modal(document.getElementById('colOrderAtMobile')).show();
+	} else {
+		// show Popover
+		var trigger = document.getElementById('colOrderBtn');
+		var popover = bootstrap.Popover.getInstance(trigger);
+		popover.show();
+	}
+})
+
+// ##############################################################################
+// #                             Filtering                                      # 
+// ##############################################################################
+
+$('#filterRecordsBtnD').on('click', function() {
+	console.log('show filter option on desktop');
+	//dataTable.searchPanes.container().prependTo(dataTable.table().container());
+    //dataTable.searchPanes.resizePanes();
+});
+
+$('#filterRecordsBtnM').on('click', function() {
+	console.log('show filter option on mobile');
 });

@@ -4,10 +4,10 @@
  *
  * To rebuild or modify this file with the latest versions of the included
  * software please visit:
- *   https://datatables.net/download/#dt/dt-1.10.23/cr-1.5.3/r-2.2.7/sc-2.0.3/sb-1.0.1/sp-1.2.2/sl-1.3.1
+ *   https://datatables.net/download/#bs4/dt-1.10.23/cr-1.5.3/kt-2.6.1/r-2.2.7/sp-1.2.2/sl-1.3.1
  *
  * Included libraries:
- *   DataTables 1.10.23, ColReorder 1.5.3, Responsive 2.2.7, Scroller 2.0.3, SearchBuilder 1.0.1, SearchPanes 1.2.2, Select 1.3.1
+ *   DataTables 1.10.23, ColReorder 1.5.3, KeyTable 2.6.1, Responsive 2.2.7, SearchPanes 1.2.2, Select 1.3.1
  */
 
 /*! DataTables 1.10.23
@@ -13966,7 +13966,7 @@
 		 *
 		 *  @type string
 		 */
-		build:"dt/dt-1.10.23/cr-1.5.3/r-2.2.7/sc-2.0.3/sb-1.0.1/sp-1.2.2/sl-1.3.1",
+		build:"bs4/dt-1.10.23/cr-1.5.3/kt-2.6.1/r-2.2.7/sp-1.2.2/sl-1.3.1",
 	
 	
 		/**
@@ -15392,6 +15392,192 @@
 	 */
 
 	return $.fn.dataTable;
+}));
+
+
+/*! DataTables Bootstrap 4 integration
+ * ©2011-2017 SpryMedia Ltd - datatables.net/license
+ */
+
+/**
+ * DataTables integration for Bootstrap 4. This requires Bootstrap 4 and
+ * DataTables 1.10 or newer.
+ *
+ * This file sets the defaults and adds options to DataTables to style its
+ * controls using Bootstrap. See http://datatables.net/manual/styling/bootstrap
+ * for further information.
+ */
+(function( factory ){
+	if ( typeof define === 'function' && define.amd ) {
+		// AMD
+		define( ['jquery', 'datatables.net'], function ( $ ) {
+			return factory( $, window, document );
+		} );
+	}
+	else if ( typeof exports === 'object' ) {
+		// CommonJS
+		module.exports = function (root, $) {
+			if ( ! root ) {
+				root = window;
+			}
+
+			if ( ! $ || ! $.fn.dataTable ) {
+				// Require DataTables, which attaches to jQuery, including
+				// jQuery if needed and have a $ property so we can access the
+				// jQuery object that is used
+				$ = require('datatables.net')(root, $).$;
+			}
+
+			return factory( $, root, root.document );
+		};
+	}
+	else {
+		// Browser
+		factory( jQuery, window, document );
+	}
+}(function( $, window, document, undefined ) {
+'use strict';
+var DataTable = $.fn.dataTable;
+
+
+/* Set the defaults for DataTables initialisation */
+$.extend( true, DataTable.defaults, {
+	dom:
+		"<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+		"<'row'<'col-sm-12'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+	renderer: 'bootstrap'
+} );
+
+
+/* Default class modification */
+$.extend( DataTable.ext.classes, {
+	sWrapper:      "dataTables_wrapper dt-bootstrap4",
+	sFilterInput:  "form-control form-control-sm",
+	sLengthSelect: "custom-select custom-select-sm form-control form-control-sm",
+	sProcessing:   "dataTables_processing card",
+	sPageButton:   "paginate_button page-item"
+} );
+
+
+/* Bootstrap paging button renderer */
+DataTable.ext.renderer.pageButton.bootstrap = function ( settings, host, idx, buttons, page, pages ) {
+	var api     = new DataTable.Api( settings );
+	var classes = settings.oClasses;
+	var lang    = settings.oLanguage.oPaginate;
+	var aria = settings.oLanguage.oAria.paginate || {};
+	var btnDisplay, btnClass, counter=0;
+
+	var attach = function( container, buttons ) {
+		var i, ien, node, button;
+		var clickHandler = function ( e ) {
+			e.preventDefault();
+			if ( !$(e.currentTarget).hasClass('disabled') && api.page() != e.data.action ) {
+				api.page( e.data.action ).draw( 'page' );
+			}
+		};
+
+		for ( i=0, ien=buttons.length ; i<ien ; i++ ) {
+			button = buttons[i];
+
+			if ( Array.isArray( button ) ) {
+				attach( container, button );
+			}
+			else {
+				btnDisplay = '';
+				btnClass = '';
+
+				switch ( button ) {
+					case 'ellipsis':
+						btnDisplay = '&#x2026;';
+						btnClass = 'disabled';
+						break;
+
+					case 'first':
+						btnDisplay = lang.sFirst;
+						btnClass = button + (page > 0 ?
+							'' : ' disabled');
+						break;
+
+					case 'previous':
+						btnDisplay = lang.sPrevious;
+						btnClass = button + (page > 0 ?
+							'' : ' disabled');
+						break;
+
+					case 'next':
+						btnDisplay = lang.sNext;
+						btnClass = button + (page < pages-1 ?
+							'' : ' disabled');
+						break;
+
+					case 'last':
+						btnDisplay = lang.sLast;
+						btnClass = button + (page < pages-1 ?
+							'' : ' disabled');
+						break;
+
+					default:
+						btnDisplay = button + 1;
+						btnClass = page === button ?
+							'active' : '';
+						break;
+				}
+
+				if ( btnDisplay ) {
+					node = $('<li>', {
+							'class': classes.sPageButton+' '+btnClass,
+							'id': idx === 0 && typeof button === 'string' ?
+								settings.sTableId +'_'+ button :
+								null
+						} )
+						.append( $('<a>', {
+								'href': '#',
+								'aria-controls': settings.sTableId,
+								'aria-label': aria[ button ],
+								'data-dt-idx': counter,
+								'tabindex': settings.iTabIndex,
+								'class': 'page-link'
+							} )
+							.html( btnDisplay )
+						)
+						.appendTo( container );
+
+					settings.oApi._fnBindAction(
+						node, {action: button}, clickHandler
+					);
+
+					counter++;
+				}
+			}
+		}
+	};
+
+	// IE9 throws an 'unknown error' if document.activeElement is used
+	// inside an iframe or frame. 
+	var activeEl;
+
+	try {
+		// Because this approach is destroying and recreating the paging
+		// elements, focus is lost on the select button which is bad for
+		// accessibility. So we want to restore focus once the draw has
+		// completed
+		activeEl = $(host).find(document.activeElement).data('dt-idx');
+	}
+	catch (e) {}
+
+	attach(
+		$(host).empty().html('<ul class="pagination"/>').children('ul'),
+		buttons
+	);
+
+	if ( activeEl !== undefined ) {
+		$(host).find( '[data-dt-idx='+activeEl+']' ).trigger('focus');
+	}
+};
+
+
+return DataTable;
 }));
 
 
@@ -16888,6 +17074,1323 @@ return ColReorder;
 }));
 
 
+/*! KeyTable 2.6.1
+ * ©2009-2021 SpryMedia Ltd - datatables.net/license
+ */
+
+/**
+ * @summary     KeyTable
+ * @description Spreadsheet like keyboard navigation for DataTables
+ * @version     2.6.1
+ * @file        dataTables.keyTable.js
+ * @author      SpryMedia Ltd (www.sprymedia.co.uk)
+ * @contact     www.sprymedia.co.uk/contact
+ * @copyright   Copyright 2009-2021 SpryMedia Ltd.
+ *
+ * This source file is free software, available under the following license:
+ *   MIT license - http://datatables.net/license/mit
+ *
+ * This source file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the license files for details.
+ *
+ * For details please refer to: http://www.datatables.net
+ */
+
+(function( factory ){
+	if ( typeof define === 'function' && define.amd ) {
+		// AMD
+		define( ['jquery', 'datatables.net'], function ( $ ) {
+			return factory( $, window, document );
+		} );
+	}
+	else if ( typeof exports === 'object' ) {
+		// CommonJS
+		module.exports = function (root, $) {
+			if ( ! root ) {
+				root = window;
+			}
+
+			if ( ! $ || ! $.fn.dataTable ) {
+				$ = require('datatables.net')(root, $).$;
+			}
+
+			return factory( $, root, root.document );
+		};
+	}
+	else {
+		// Browser
+		factory( jQuery, window, document );
+	}
+}(function( $, window, document, undefined ) {
+'use strict';
+var DataTable = $.fn.dataTable;
+var namespaceCounter = 0;
+var editorNamespaceCounter = 0;
+
+
+var KeyTable = function ( dt, opts ) {
+	// Sanity check that we are using DataTables 1.10 or newer
+	if ( ! DataTable.versionCheck || ! DataTable.versionCheck( '1.10.8' ) ) {
+		throw 'KeyTable requires DataTables 1.10.8 or newer';
+	}
+
+	// User and defaults configuration object
+	this.c = $.extend( true, {},
+		DataTable.defaults.keyTable,
+		KeyTable.defaults,
+		opts
+	);
+
+	// Internal settings
+	this.s = {
+		/** @type {DataTable.Api} DataTables' API instance */
+		dt: new DataTable.Api( dt ),
+
+		enable: true,
+
+		/** @type {bool} Flag for if a draw is triggered by focus */
+		focusDraw: false,
+
+		/** @type {bool} Flag to indicate when waiting for a draw to happen.
+		  *   Will ignore key presses at this point
+		  */
+		waitingForDraw: false,
+
+		/** @type {object} Information about the last cell that was focused */
+		lastFocus: null,
+
+		/** @type {string} Unique namespace per instance */
+		namespace: '.keyTable-'+(namespaceCounter++),
+
+		/** @type {Node} Input element for tabbing into the table */
+		tabInput: null
+	};
+
+	// DOM items
+	this.dom = {
+
+	};
+
+	// Check if row reorder has already been initialised on this table
+	var settings = this.s.dt.settings()[0];
+	var exisiting = settings.keytable;
+	if ( exisiting ) {
+		return exisiting;
+	}
+
+	settings.keytable = this;
+	this._constructor();
+};
+
+
+$.extend( KeyTable.prototype, {
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	 * API methods for DataTables API interface
+	 */
+
+	/**
+	 * Blur the table's cell focus
+	 */
+	blur: function ()
+	{
+		this._blur();
+	},
+
+	/**
+	 * Enable cell focus for the table
+	 *
+	 * @param  {string} state Can be `true`, `false` or `-string navigation-only`
+	 */
+	enable: function ( state )
+	{
+		this.s.enable = state;
+	},
+
+	/**
+	 * Get enable status
+	 */
+	enabled: function () {
+		return this.s.enable;
+	},
+
+	/**
+	 * Focus on a cell
+	 * @param  {integer} row    Row index
+	 * @param  {integer} column Column index
+	 */
+	focus: function ( row, column )
+	{
+		this._focus( this.s.dt.cell( row, column ) );
+	},
+
+	/**
+	 * Is the cell focused
+	 * @param  {object} cell Cell index to check
+	 * @returns {boolean} true if focused, false otherwise
+	 */
+	focused: function ( cell )
+	{
+		var lastFocus = this.s.lastFocus;
+
+		if ( ! lastFocus ) {
+			return false;
+		}
+
+		var lastIdx = this.s.lastFocus.cell.index();
+		return cell.row === lastIdx.row && cell.column === lastIdx.column;
+	},
+
+
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	 * Constructor
+	 */
+
+	/**
+	 * Initialise the KeyTable instance
+	 *
+	 * @private
+	 */
+	_constructor: function ()
+	{
+		this._tabInput();
+
+		var that = this;
+		var dt = this.s.dt;
+		var table = $( dt.table().node() );
+		var namespace = this.s.namespace;
+		var editorBlock = false;
+
+		// Need to be able to calculate the cell positions relative to the table
+		if ( table.css('position') === 'static' ) {
+			table.css( 'position', 'relative' );
+		}
+
+		// Click to focus
+		$( dt.table().body() ).on( 'click'+namespace, 'th, td', function (e) {
+			if ( that.s.enable === false ) {
+				return;
+			}
+
+			var cell = dt.cell( this );
+
+			if ( ! cell.any() ) {
+				return;
+			}
+
+			that._focus( cell, null, false, e );
+		} );
+
+		// Key events
+		$( document ).on( 'keydown'+namespace, function (e) {
+			if ( ! editorBlock ) {
+				that._key( e );
+			}
+		} );
+
+		// Click blur
+		if ( this.c.blurable ) {
+			$( document ).on( 'mousedown'+namespace, function ( e ) {
+				// Click on the search input will blur focus
+				if ( $(e.target).parents( '.dataTables_filter' ).length ) {
+					that._blur();
+				}
+
+				// If the click was inside the DataTables container, don't blur
+				if ( $(e.target).parents().filter( dt.table().container() ).length ) {
+					return;
+				}
+
+				// Don't blur in Editor form
+				if ( $(e.target).parents('div.DTE').length ) {
+					return;
+				}
+
+				// Or an Editor date input
+				if (
+					$(e.target).parents('div.editor-datetime').length ||
+					$(e.target).parents('div.dt-datetime').length 
+				) {
+					return;
+				}
+
+				//If the click was inside the fixed columns container, don't blur
+				if ( $(e.target).parents().filter('.DTFC_Cloned').length ) {
+					return;
+				}
+
+				that._blur();
+			} );
+		}
+
+		if ( this.c.editor ) {
+			var editor = this.c.editor;
+
+			// Need to disable KeyTable when the main editor is shown
+			editor.on( 'open.keyTableMain', function (e, mode, action) {
+				if ( mode !== 'inline' && that.s.enable ) {
+					that.enable( false );
+
+					editor.one( 'close'+namespace, function () {
+						that.enable( true );
+					} );
+				}
+			} );
+
+			if ( this.c.editOnFocus ) {
+				dt.on( 'key-focus'+namespace+' key-refocus'+namespace, function ( e, dt, cell, orig ) {
+					that._editor( null, orig, true );
+				} );
+			}
+
+			// Activate Editor when a key is pressed (will be ignored, if
+			// already active).
+			dt.on( 'key'+namespace, function ( e, dt, key, cell, orig ) {
+				that._editor( key, orig, false );
+			} );
+
+			// Active editing on double click - it will already have focus from
+			// the click event handler above
+			$( dt.table().body() ).on( 'dblclick'+namespace, 'th, td', function (e) {
+				if ( that.s.enable === false ) {
+					return;
+				}
+
+				var cell = dt.cell( this );
+
+				if ( ! cell.any() ) {
+					return;
+				}
+
+				if ( that.s.lastFocus && this !== that.s.lastFocus.cell.node() ) {
+					return;
+				}
+
+				that._editor( null, e, true );
+			} );
+
+			// While Editor is busy processing, we don't want to process any key events
+			editor
+				.on('preSubmit', function () {
+					editorBlock = true;
+				} )
+				.on('preSubmitCancelled', function () {
+					editorBlock = false;
+				} )
+				.on('submitComplete', function () {
+					editorBlock = false;
+				} );
+		}
+
+		// Stave saving
+		if ( dt.settings()[0].oFeatures.bStateSave ) {
+			dt.on( 'stateSaveParams'+namespace, function (e, s, d) {
+				d.keyTable = that.s.lastFocus ?
+					that.s.lastFocus.cell.index() :
+					null;
+			} );
+		}
+
+		dt.on( 'column-visibility'+namespace, function (e) {
+			that._tabInput();
+		} );
+
+		// Redraw - retain focus on the current cell
+		dt.on( 'draw'+namespace, function (e) {
+			that._tabInput();
+
+			if ( that.s.focusDraw ) {
+				return;
+			}
+
+			var lastFocus = that.s.lastFocus;
+
+			if ( lastFocus ) {
+				var relative = that.s.lastFocus.relative;
+				var info = dt.page.info();
+				var row = relative.row + info.start;
+
+				if ( info.recordsDisplay === 0 ) {
+					return;
+				}
+
+				// Reverse if needed
+				if ( row >= info.recordsDisplay ) {
+					row = info.recordsDisplay - 1;
+				}
+
+				that._focus( row, relative.column, true, e );
+			}
+		} );
+
+		// Clipboard support
+		if ( this.c.clipboard ) {
+			this._clipboard();
+		}
+
+		dt.on( 'destroy'+namespace, function () {
+			that._blur( true );
+
+			// Event tidy up
+			dt.off( namespace );
+
+			$( dt.table().body() )
+				.off( 'click'+namespace, 'th, td' )
+				.off( 'dblclick'+namespace, 'th, td' );
+
+			$( document )
+				.off( 'mousedown'+namespace )
+				.off( 'keydown'+namespace )
+				.off( 'copy'+namespace )
+				.off( 'paste'+namespace );
+		} );
+
+		// Initial focus comes from state or options
+		var state = dt.state.loaded();
+
+		if ( state && state.keyTable ) {
+			// Wait until init is done
+			dt.one( 'init', function () {
+				var cell = dt.cell( state.keyTable );
+
+				// Ensure that the saved cell still exists
+				if ( cell.any() ) {
+					cell.focus();
+				}
+			} );
+		}
+		else if ( this.c.focus ) {
+			dt.cell( this.c.focus ).focus();
+		}
+	},
+
+
+	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	 * Private methods
+	 */
+
+	/**
+	 * Blur the control
+	 *
+	 * @param {boolean} [noEvents=false] Don't trigger updates / events (for destroying)
+	 * @private
+	 */
+	_blur: function (noEvents)
+	{
+		if ( ! this.s.enable || ! this.s.lastFocus ) {
+			return;
+		}
+
+		var cell = this.s.lastFocus.cell;
+
+		$( cell.node() ).removeClass( this.c.className );
+		this.s.lastFocus = null;
+
+		if ( ! noEvents ) {
+			this._updateFixedColumns(cell.index().column);
+
+			this._emitEvent( 'key-blur', [ this.s.dt, cell ] );
+		}
+	},
+
+
+	/**
+	 * Clipboard interaction handlers
+	 *
+	 * @private
+	 */
+	_clipboard: function () {
+		var dt = this.s.dt;
+		var that = this;
+		var namespace = this.s.namespace;
+
+		// IE8 doesn't support getting selected text
+		if ( ! window.getSelection ) {
+			return;
+		}
+
+		$(document).on( 'copy'+namespace, function (ejq) {
+			var e = ejq.originalEvent;
+			var selection = window.getSelection().toString();
+			var focused = that.s.lastFocus;
+
+			// Only copy cell text to clipboard if there is no other selection
+			// and there is a focused cell
+			if ( ! selection && focused ) {
+				e.clipboardData.setData(
+					'text/plain',
+					focused.cell.render( that.c.clipboardOrthogonal )
+				);
+				e.preventDefault();
+			}
+		} );
+
+		$(document).on( 'paste'+namespace, function (ejq) {
+			var e = ejq.originalEvent;
+			var focused = that.s.lastFocus;
+			var activeEl = document.activeElement;
+			var editor = that.c.editor;
+			var pastedText;
+
+			if ( focused && (! activeEl || activeEl.nodeName.toLowerCase() === 'body') ) {
+				e.preventDefault();
+
+				if ( window.clipboardData && window.clipboardData.getData ) {
+					// IE
+					pastedText = window.clipboardData.getData('Text');
+				}
+				else if ( e.clipboardData && e.clipboardData.getData ) {
+					// Everything else
+					pastedText = e.clipboardData.getData('text/plain');
+				}
+
+				if ( editor ) {
+					// Got Editor - need to activate inline editing,
+					// set the value and submit
+					editor
+						.inline( focused.cell.index() )
+						.set( editor.displayed()[0], pastedText )
+						.submit();
+				}
+				else {
+					// No editor, so just dump the data in
+					focused.cell.data( pastedText );
+					dt.draw(false);
+				}
+			}
+		} );
+	},
+
+
+	/**
+	 * Get an array of the column indexes that KeyTable can operate on. This
+	 * is a merge of the user supplied columns and the visible columns.
+	 *
+	 * @private
+	 */
+	_columns: function ()
+	{
+		var dt = this.s.dt;
+		var user = dt.columns( this.c.columns ).indexes();
+		var out = [];
+
+		dt.columns( ':visible' ).every( function (i) {
+			if ( user.indexOf( i ) !== -1 ) {
+				out.push( i );
+			}
+		} );
+
+		return out;
+	},
+
+
+	/**
+	 * Perform excel like navigation for Editor by triggering an edit on key
+	 * press
+	 *
+	 * @param  {integer} key Key code for the pressed key
+	 * @param  {object} orig Original event
+	 * @private
+	 */
+	_editor: function ( key, orig, hardEdit )
+	{
+		// If nothing focused, we can't take any action
+		if (! this.s.lastFocus) {
+			return;	
+		}
+
+		// DataTables draw event
+		if (orig && orig.type === 'draw') {
+			return;
+		}
+
+		var that = this;
+		var dt = this.s.dt;
+		var editor = this.c.editor;
+		var editCell = this.s.lastFocus.cell;
+		var namespace = this.s.namespace + 'e' + editorNamespaceCounter++;
+
+		// Do nothing if there is already an inline edit in this cell
+		if ( $('div.DTE', editCell.node()).length ) {
+			return;
+		}
+
+		// Don't activate Editor on control key presses
+		if ( key !== null && (
+			(key >= 0x00 && key <= 0x09) ||
+			key === 0x0b ||
+			key === 0x0c ||
+			(key >= 0x0e && key <= 0x1f) ||
+			(key >= 0x70 && key <= 0x7b) ||
+			(key >= 0x7f && key <= 0x9f)
+		) ) {
+			return;
+		}
+
+		if ( orig ) {
+			orig.stopPropagation();
+
+			// Return key should do nothing - for textareas it would empty the
+			// contents
+			if ( key === 13 ) {
+				orig.preventDefault();
+			}
+		}
+
+		var editInline = function () {
+			editor
+				.one( 'open'+namespace, function () {
+					// Remove cancel open
+					editor.off( 'cancelOpen'+namespace );
+
+					// Excel style - select all text
+					if ( ! hardEdit ) {
+						$('div.DTE_Field_InputControl input, div.DTE_Field_InputControl textarea').select();
+					}
+
+					// Reduce the keys the Keys listens for
+					dt.keys.enable( hardEdit ? 'tab-only' : 'navigation-only' );
+
+					// On blur of the navigation submit
+					dt.on( 'key-blur.editor', function (e, dt, cell) {
+						if ( editor.displayed() && cell.node() === editCell.node() ) {
+							editor.submit();
+						}
+					} );
+
+					// Highlight the cell a different colour on full edit
+					if ( hardEdit ) {
+						$( dt.table().container() ).addClass('dtk-focus-alt');
+					}
+
+					// If the dev cancels the submit, we need to return focus
+					editor.on( 'preSubmitCancelled'+namespace, function () {
+						setTimeout( function () {
+							that._focus( editCell, null, false );
+						}, 50 );
+					} );
+
+					editor.on( 'submitUnsuccessful'+namespace, function () {
+						that._focus( editCell, null, false );
+					} );
+
+					// Restore full key navigation on close
+					editor.one( 'close'+namespace, function () {
+						dt.keys.enable( true );
+						dt.off( 'key-blur.editor' );
+						editor.off( namespace );
+						$( dt.table().container() ).removeClass('dtk-focus-alt');
+
+						if (that.s.returnSubmit) {
+							that.s.returnSubmit = false;
+							that._emitEvent( 'key-return-submit', [dt, editCell] );
+						}
+					} );
+				} )
+				.one( 'cancelOpen'+namespace, function () {
+					// `preOpen` can cancel the display of the form, so it
+					// might be that the open event handler isn't needed
+					editor.off( namespace );
+				} )
+				.inline( editCell.index() );
+		};
+
+		// Editor 1.7 listens for `return` on keyup, so if return is the trigger
+		// key, we need to wait for `keyup` otherwise Editor would just submit
+		// the content triggered by this keypress.
+		if ( key === 13 ) {
+			hardEdit = true;
+
+			$(document).one( 'keyup', function () { // immediately removed
+				editInline();
+			} );
+		}
+		else {
+			editInline();
+		}
+	},
+
+
+	/**
+	 * Emit an event on the DataTable for listeners
+	 *
+	 * @param  {string} name Event name
+	 * @param  {array} args Event arguments
+	 * @private
+	 */
+	_emitEvent: function ( name, args )
+	{
+		this.s.dt.iterator( 'table', function ( ctx, i ) {
+			$(ctx.nTable).triggerHandler( name, args );
+		} );
+	},
+
+
+	/**
+	 * Focus on a particular cell, shifting the table's paging if required
+	 *
+	 * @param  {DataTables.Api|integer} row Can be given as an API instance that
+	 *   contains the cell to focus or as an integer. As the latter it is the
+	 *   visible row index (from the whole data set) - NOT the data index
+	 * @param  {integer} [column] Not required if a cell is given as the first
+	 *   parameter. Otherwise this is the column data index for the cell to
+	 *   focus on
+	 * @param {boolean} [shift=true] Should the viewport be moved to show cell
+	 * @private
+	 */
+	_focus: function ( row, column, shift, originalEvent )
+	{
+		var that = this;
+		var dt = this.s.dt;
+		var pageInfo = dt.page.info();
+		var lastFocus = this.s.lastFocus;
+
+		if ( ! originalEvent) {
+			originalEvent = null;
+		}
+
+		if ( ! this.s.enable ) {
+			return;
+		}
+
+		if ( typeof row !== 'number' ) {
+			// Its an API instance - check that there is actually a row
+			if ( ! row.any() ) {
+				return;
+			}
+
+			// Convert the cell to a row and column
+			var index = row.index();
+			column = index.column;
+			row = dt
+				.rows( { filter: 'applied', order: 'applied' } )
+				.indexes()
+				.indexOf( index.row );
+			
+			// Don't focus rows that were filtered out.
+			if ( row < 0 ) {
+				return;
+			}
+
+			// For server-side processing normalise the row by adding the start
+			// point, since `rows().indexes()` includes only rows that are
+			// available at the client-side
+			if ( pageInfo.serverSide ) {
+				row += pageInfo.start;
+			}
+		}
+
+		// Is the row on the current page? If not, we need to redraw to show the
+		// page
+		if ( pageInfo.length !== -1 && (row < pageInfo.start || row >= pageInfo.start+pageInfo.length) ) {
+			this.s.focusDraw = true;
+			this.s.waitingForDraw = true;
+
+			dt
+				.one( 'draw', function () {
+					that.s.focusDraw = false;
+					that.s.waitingForDraw = false;
+					that._focus( row, column, undefined, originalEvent );
+				} )
+				.page( Math.floor( row / pageInfo.length ) )
+				.draw( false );
+
+			return;
+		}
+
+		// In the available columns?
+		if ( $.inArray( column, this._columns() ) === -1 ) {
+			return;
+		}
+
+		// De-normalise the server-side processing row, so we select the row
+		// in its displayed position
+		if ( pageInfo.serverSide ) {
+			row -= pageInfo.start;
+		}
+
+		// Get the cell from the current position - ignoring any cells which might
+		// not have been rendered (therefore can't use `:eq()` selector).
+		var cells = dt.cells( null, column, {search: 'applied', order: 'applied'} ).flatten();
+		var cell = dt.cell( cells[ row ] );
+
+		if ( lastFocus ) {
+			// Don't trigger a refocus on the same cell
+			if ( lastFocus.node === cell.node() ) {
+				this._emitEvent( 'key-refocus', [ this.s.dt, cell, originalEvent || null ] );
+				return;
+			}
+
+			// Otherwise blur the old focus
+			this._blur();
+		}
+
+		// Clear focus from other tables
+		this._removeOtherFocus();
+
+		var node = $( cell.node() );
+		node.addClass( this.c.className );
+
+		this._updateFixedColumns(column);
+
+		// Shift viewpoint and page to make cell visible
+		if ( shift === undefined || shift === true ) {
+			this._scroll( $(window), $(document.body), node, 'offset' );
+
+			var bodyParent = dt.table().body().parentNode;
+			if ( bodyParent !== dt.table().header().parentNode ) {
+				var parent = $(bodyParent.parentNode);
+
+				this._scroll( parent, parent, node, 'position' );
+			}
+		}
+
+		// Event and finish
+		this.s.lastFocus = {
+			cell: cell,
+			node: cell.node(),
+			relative: {
+				row: dt.rows( { page: 'current' } ).indexes().indexOf( cell.index().row ),
+				column: cell.index().column
+			}
+		};
+
+		this._emitEvent( 'key-focus', [ this.s.dt, cell, originalEvent || null ] );
+		dt.state.save();
+	},
+
+
+	/**
+	 * Handle key press
+	 *
+	 * @param  {object} e Event
+	 * @private
+	 */
+	_key: function ( e )
+	{
+		// If we are waiting for a draw to happen from another key event, then
+		// do nothing for this new key press.
+		if ( this.s.waitingForDraw ) {
+			e.preventDefault();
+			return;
+		}
+
+		var enable = this.s.enable;
+		this.s.returnSubmit = (enable === 'navigation-only' || enable === 'tab-only') && e.keyCode === 13
+			? true
+			: false;
+
+		var navEnable = enable === true || enable === 'navigation-only';
+		if ( ! enable ) {
+			return;
+		}
+
+		if ( (e.keyCode === 0 || e.ctrlKey || e.metaKey || e.altKey) && !(e.ctrlKey && e.altKey) ) {
+			return;
+		}
+
+		// If not focused, then there is no key action to take
+		var lastFocus = this.s.lastFocus;
+		if ( ! lastFocus ) {
+			return;
+		}
+
+		// And the last focus still exists!
+		if ( ! this.s.dt.cell(lastFocus.node).any() ) {
+			this.s.lastFocus = null;
+			return;
+		}
+
+		var that = this;
+		var dt = this.s.dt;
+		var scrolling = this.s.dt.settings()[0].oScroll.sY ? true : false;
+
+		// If we are not listening for this key, do nothing
+		if ( this.c.keys && $.inArray( e.keyCode, this.c.keys ) === -1 ) {
+			return;
+		}
+
+		switch( e.keyCode ) {
+			case 9: // tab
+				// `enable` can be tab-only
+				this._shift( e, e.shiftKey ? 'left' : 'right', true );
+				break;
+
+			case 27: // esc
+				if ( this.s.blurable && enable === true ) {
+					this._blur();
+				}
+				break;
+
+			case 33: // page up (previous page)
+			case 34: // page down (next page)
+				if ( navEnable && !scrolling ) {
+					e.preventDefault();
+
+					dt
+						.page( e.keyCode === 33 ? 'previous' : 'next' )
+						.draw( false );
+				}
+				break;
+
+			case 35: // end (end of current page)
+			case 36: // home (start of current page)
+				if ( navEnable ) {
+					e.preventDefault();
+					var indexes = dt.cells( {page: 'current'} ).indexes();
+					var colIndexes = this._columns();
+
+					this._focus( dt.cell(
+						indexes[ e.keyCode === 35 ? indexes.length-1 : colIndexes[0] ]
+					), null, true, e );
+				}
+				break;
+
+			case 37: // left arrow
+				if ( navEnable ) {
+					this._shift( e, 'left' );
+				}
+				break;
+
+			case 38: // up arrow
+				if ( navEnable ) {
+					this._shift( e, 'up' );
+				}
+				break;
+
+			case 39: // right arrow
+				if ( navEnable ) {
+					this._shift( e, 'right' );
+				}
+				break;
+
+			case 40: // down arrow
+				if ( navEnable ) {
+					this._shift( e, 'down' );
+				}
+				break;
+
+			case 113: // F2 - Excel like hard edit
+				if ( this.c.editor ) {
+					this._editor(null, e, true);
+					break;
+				}
+				// else fallthrough
+
+			default:
+				// Everything else - pass through only when fully enabled
+				if ( enable === true ) {
+					this._emitEvent( 'key', [ dt, e.keyCode, this.s.lastFocus.cell, e ] );
+				}
+				break;
+		}
+	},
+
+	/**
+	 * Remove focus from all tables other than this one
+	 */
+	_removeOtherFocus: function ()
+	{
+		var thisTable = this.s.dt.table().node();
+
+		$.fn.dataTable.tables({api:true}).iterator('table', function (settings) {
+			if (this.table().node() !== thisTable) {
+				this.cell.blur();
+			}
+		});
+	},
+
+	/**
+	 * Scroll a container to make a cell visible in it. This can be used for
+	 * both DataTables scrolling and native window scrolling.
+	 *
+	 * @param  {jQuery} container Scrolling container
+	 * @param  {jQuery} scroller  Item being scrolled
+	 * @param  {jQuery} cell      Cell in the scroller
+	 * @param  {string} posOff    `position` or `offset` - which to use for the
+	 *   calculation. `offset` for the document, otherwise `position`
+	 * @private
+	 */
+	_scroll: function ( container, scroller, cell, posOff )
+	{
+		var offset = cell[posOff]();
+		var height = cell.outerHeight();
+		var width = cell.outerWidth();
+
+		var scrollTop = scroller.scrollTop();
+		var scrollLeft = scroller.scrollLeft();
+		var containerHeight = container.height();
+		var containerWidth = container.width();
+
+		// If Scroller is being used, the table can be `position: absolute` and that
+		// needs to be taken account of in the offset. If no Scroller, this will be 0
+		if ( posOff === 'position' ) {
+			offset.top += parseInt( cell.closest('table').css('top'), 10 );
+		}
+
+		// Top correction
+		if ( offset.top < scrollTop ) {
+			scroller.scrollTop( offset.top );
+		}
+
+		// Left correction
+		if ( offset.left < scrollLeft ) {
+			scroller.scrollLeft( offset.left );
+		}
+
+		// Bottom correction
+		if ( offset.top + height > scrollTop + containerHeight && height < containerHeight ) {
+			scroller.scrollTop( offset.top + height - containerHeight );
+		}
+
+		// Right correction
+		if ( offset.left + width > scrollLeft + containerWidth && width < containerWidth ) {
+			scroller.scrollLeft( offset.left + width - containerWidth );
+		}
+	},
+
+
+	/**
+	 * Calculate a single offset movement in the table - up, down, left and
+	 * right and then perform the focus if possible
+	 *
+	 * @param  {object}  e           Event object
+	 * @param  {string}  direction   Movement direction
+	 * @param  {boolean} keyBlurable `true` if the key press can result in the
+	 *   table being blurred. This is so arrow keys won't blur the table, but
+	 *   tab will.
+	 * @private
+	 */
+	_shift: function ( e, direction, keyBlurable )
+	{
+		var that      = this;
+		var dt        = this.s.dt;
+		var pageInfo  = dt.page.info();
+		var rows      = pageInfo.recordsDisplay;
+		var columns   = this._columns();
+		var last      = this.s.lastFocus;
+		if ( ! last ) {
+			return;
+		}
+	
+		var currentCell  = last.cell;
+		if ( ! currentCell ) {
+			return;
+		}
+
+		var currRow = dt
+			.rows( { filter: 'applied', order: 'applied' } )
+			.indexes()
+			.indexOf( currentCell.index().row );
+
+		// When server-side processing, `rows().indexes()` only gives the rows
+		// that are available at the client-side, so we need to normalise the
+		// row's current position by the display start point
+		if ( pageInfo.serverSide ) {
+			currRow += pageInfo.start;
+		}
+
+		var currCol = dt
+			.columns( columns )
+			.indexes()
+			.indexOf( currentCell.index().column );
+
+		var
+			row = currRow,
+			column = columns[ currCol ]; // row is the display, column is an index
+
+		if ( direction === 'right' ) {
+			if ( currCol >= columns.length - 1 ) {
+				row++;
+				column = columns[0];
+			}
+			else {
+				column = columns[ currCol+1 ];
+			}
+		}
+		else if ( direction === 'left' ) {
+			if ( currCol === 0 ) {
+				row--;
+				column = columns[ columns.length - 1 ];
+			}
+			else {
+				column = columns[ currCol-1 ];
+			}
+		}
+		else if ( direction === 'up' ) {
+			row--;
+		}
+		else if ( direction === 'down' ) {
+			row++;
+		}
+
+		if ( row >= 0 && row < rows && $.inArray( column, columns ) !== -1 ) {
+			if (e) {
+				e.preventDefault();
+			}
+
+			this._focus( row, column, true, e );
+		}
+		else if ( ! keyBlurable || ! this.c.blurable ) {
+			// No new focus, but if the table isn't blurable, then don't loose
+			// focus
+			if (e) {
+				e.preventDefault();
+			}
+		}
+		else {
+			this._blur();
+		}
+	},
+
+
+	/**
+	 * Create and insert a hidden input element that can receive focus on behalf
+	 * of the table
+	 *
+	 * @private
+	 */
+	_tabInput: function ()
+	{
+		var that = this;
+		var dt = this.s.dt;
+		var tabIndex = this.c.tabIndex !== null ?
+			this.c.tabIndex :
+			dt.settings()[0].iTabIndex;
+
+		if ( tabIndex == -1 ) {
+			return;
+		}
+
+		// Only create the input element once on first class
+		if (! this.s.tabInput) {
+			var div = $('<div><input type="text" tabindex="'+tabIndex+'"/></div>')
+				.css( {
+					position: 'absolute',
+					height: 1,
+					width: 0,
+					overflow: 'hidden'
+				} );
+
+			div.children().on( 'focus', function (e) {
+				var cell = dt.cell(':eq(0)', that._columns(), {page: 'current'});
+	
+				if ( cell.any() ) {
+					that._focus( cell, null, true, e );
+				}
+			} );
+
+			this.s.tabInput = div;
+		}
+
+		// Insert the input element into the first cell in the table's body
+		var cell = this.s.dt.cell(':eq(0)', '0:visible', {page: 'current', order: 'current'}).node();
+		if (cell) {
+			$(cell).prepend(this.s.tabInput);
+		}
+	},
+
+	/**
+	 * Update fixed columns if they are enabled and if the cell we are
+	 * focusing is inside a fixed column
+	 * @param  {integer} column Index of the column being changed
+	 * @private
+	 */
+	_updateFixedColumns: function( column )
+	{
+		var dt = this.s.dt;
+		var settings = dt.settings()[0];
+
+		if ( settings._oFixedColumns ) {
+			var leftCols = settings._oFixedColumns.s.iLeftColumns;
+			var rightCols = settings.aoColumns.length - settings._oFixedColumns.s.iRightColumns;
+
+			if (column < leftCols || column >= rightCols) {
+				dt.fixedColumns().update();
+			}
+		}
+	}
+} );
+
+
+/**
+ * KeyTable default settings for initialisation
+ *
+ * @namespace
+ * @name KeyTable.defaults
+ * @static
+ */
+KeyTable.defaults = {
+	/**
+	 * Can focus be removed from the table
+	 * @type {Boolean}
+	 */
+	blurable: true,
+
+	/**
+	 * Class to give to the focused cell
+	 * @type {String}
+	 */
+	className: 'focus',
+
+	/**
+	 * Enable or disable clipboard support
+	 * @type {Boolean}
+	 */
+	clipboard: true,
+
+	/**
+	 * Orthogonal data that should be copied to clipboard
+	 * @type {string}
+	 */
+	clipboardOrthogonal: 'display',
+
+	/**
+	 * Columns that can be focused. This is automatically merged with the
+	 * visible columns as only visible columns can gain focus.
+	 * @type {String}
+	 */
+	columns: '', // all
+
+	/**
+	 * Editor instance to automatically perform Excel like navigation
+	 * @type {Editor}
+	 */
+	editor: null,
+
+	/**
+	 * Trigger editing immediately on focus
+	 * @type {boolean}
+	 */
+	editOnFocus: false,
+
+	/**
+	 * Select a cell to automatically select on start up. `null` for no
+	 * automatic selection
+	 * @type {cell-selector}
+	 */
+	focus: null,
+
+	/**
+	 * Array of keys to listen for
+	 * @type {null|array}
+	 */
+	keys: null,
+
+	/**
+	 * Tab index for where the table should sit in the document's tab flow
+	 * @type {integer|null}
+	 */
+	tabIndex: null
+};
+
+
+
+KeyTable.version = "2.6.1";
+
+
+$.fn.dataTable.KeyTable = KeyTable;
+$.fn.DataTable.KeyTable = KeyTable;
+
+
+DataTable.Api.register( 'cell.blur()', function () {
+	return this.iterator( 'table', function (ctx) {
+		if ( ctx.keytable ) {
+			ctx.keytable.blur();
+		}
+	} );
+} );
+
+DataTable.Api.register( 'cell().focus()', function () {
+	return this.iterator( 'cell', function (ctx, row, column) {
+		if ( ctx.keytable ) {
+			ctx.keytable.focus( row, column );
+		}
+	} );
+} );
+
+DataTable.Api.register( 'keys.disable()', function () {
+	return this.iterator( 'table', function (ctx) {
+		if ( ctx.keytable ) {
+			ctx.keytable.enable( false );
+		}
+	} );
+} );
+
+DataTable.Api.register( 'keys.enable()', function ( opts ) {
+	return this.iterator( 'table', function (ctx) {
+		if ( ctx.keytable ) {
+			ctx.keytable.enable( opts === undefined ? true : opts );
+		}
+	} );
+} );
+
+DataTable.Api.register( 'keys.enabled()', function ( opts ) {
+	var ctx = this.context;
+
+	if (ctx.length) {
+		return ctx[0].keytable
+			? ctx[0].keytable.enabled()
+			: false;
+	}
+
+	return false;
+} );
+
+DataTable.Api.register( 'keys.move()', function ( dir ) {
+	return this.iterator( 'table', function (ctx) {
+		if ( ctx.keytable ) {
+			ctx.keytable._shift( null, dir, false );
+		}
+	} );
+} );
+
+// Cell selector
+DataTable.ext.selector.cell.push( function ( settings, opts, cells ) {
+	var focused = opts.focused;
+	var kt = settings.keytable;
+	var out = [];
+
+	if ( ! kt || focused === undefined ) {
+		return cells;
+	}
+
+	for ( var i=0, ien=cells.length ; i<ien ; i++ ) {
+		if ( (focused === true &&  kt.focused( cells[i] ) ) ||
+			 (focused === false && ! kt.focused( cells[i] ) )
+		) {
+			out.push( cells[i] );
+		}
+	}
+
+	return out;
+} );
+
+
+// Attach a listener to the document which listens for DataTables initialisation
+// events so we can automatically initialise
+$(document).on( 'preInit.dt.dtk', function (e, settings, json) {
+	if ( e.namespace !== 'dt' ) {
+		return;
+	}
+
+	var init = settings.oInit.keys;
+	var defaults = DataTable.defaults.keys;
+
+	if ( init || defaults ) {
+		var opts = $.extend( {}, defaults, init );
+
+		if ( init !== false ) {
+			new KeyTable( settings, opts  );
+		}
+	}
+} );
+
+
+return KeyTable;
+}));
+
+
 /*! Responsive 2.2.7
  * 2014-2021 SpryMedia Ltd - datatables.net/license
  */
@@ -18362,5731 +19865,6 @@ $(document).on( 'preInit.dt.dtr', function (e, settings, json) {
 
 return Responsive;
 }));
-
-
-/*! Scroller 2.0.3
- * ©2011-2020 SpryMedia Ltd - datatables.net/license
- */
-
-/**
- * @summary     Scroller
- * @description Virtual rendering for DataTables
- * @version     2.0.3
- * @file        dataTables.scroller.js
- * @author      SpryMedia Ltd (www.sprymedia.co.uk)
- * @contact     www.sprymedia.co.uk/contact
- * @copyright   Copyright 2011-2020 SpryMedia Ltd.
- *
- * This source file is free software, available under the following license:
- *   MIT license - http://datatables.net/license/mit
- *
- * This source file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the license files for details.
- *
- * For details please refer to: http://www.datatables.net
- */
-
-(function( factory ){
-	if ( typeof define === 'function' && define.amd ) {
-		// AMD
-		define( ['jquery', 'datatables.net'], function ( $ ) {
-			return factory( $, window, document );
-		} );
-	}
-	else if ( typeof exports === 'object' ) {
-		// CommonJS
-		module.exports = function (root, $) {
-			if ( ! root ) {
-				root = window;
-			}
-
-			if ( ! $ || ! $.fn.dataTable ) {
-				$ = require('datatables.net')(root, $).$;
-			}
-
-			return factory( $, root, root.document );
-		};
-	}
-	else {
-		// Browser
-		factory( jQuery, window, document );
-	}
-}(function( $, window, document, undefined ) {
-'use strict';
-var DataTable = $.fn.dataTable;
-
-
-/**
- * Scroller is a virtual rendering plug-in for DataTables which allows large
- * datasets to be drawn on screen every quickly. What the virtual rendering means
- * is that only the visible portion of the table (and a bit to either side to make
- * the scrolling smooth) is drawn, while the scrolling container gives the
- * visual impression that the whole table is visible. This is done by making use
- * of the pagination abilities of DataTables and moving the table around in the
- * scrolling container DataTables adds to the page. The scrolling container is
- * forced to the height it would be for the full table display using an extra
- * element.
- *
- * Note that rows in the table MUST all be the same height. Information in a cell
- * which expands on to multiple lines will cause some odd behaviour in the scrolling.
- *
- * Scroller is initialised by simply including the letter 'S' in the sDom for the
- * table you want to have this feature enabled on. Note that the 'S' must come
- * AFTER the 't' parameter in `dom`.
- *
- * Key features include:
- *   <ul class="limit_length">
- *     <li>Speed! The aim of Scroller for DataTables is to make rendering large data sets fast</li>
- *     <li>Full compatibility with deferred rendering in DataTables for maximum speed</li>
- *     <li>Display millions of rows</li>
- *     <li>Integration with state saving in DataTables (scrolling position is saved)</li>
- *     <li>Easy to use</li>
- *   </ul>
- *
- *  @class
- *  @constructor
- *  @global
- *  @param {object} dt DataTables settings object or API instance
- *  @param {object} [opts={}] Configuration object for FixedColumns. Options 
- *    are defined by {@link Scroller.defaults}
- *
- *  @requires jQuery 1.7+
- *  @requires DataTables 1.10.0+
- *
- *  @example
- *    $(document).ready(function() {
- *        $('#example').DataTable( {
- *            "scrollY": "200px",
- *            "ajax": "media/dataset/large.txt",
- *            "scroller": true,
- *            "deferRender": true
- *        } );
- *    } );
- */
-var Scroller = function ( dt, opts ) {
-	/* Sanity check - you just know it will happen */
-	if ( ! (this instanceof Scroller) ) {
-		alert( "Scroller warning: Scroller must be initialised with the 'new' keyword." );
-		return;
-	}
-
-	if ( opts === undefined ) {
-		opts = {};
-	}
-
-	var dtApi = $.fn.dataTable.Api( dt );
-
-	/**
-	 * Settings object which contains customisable information for the Scroller instance
-	 * @namespace
-	 * @private
-	 * @extends Scroller.defaults
-	 */
-	this.s = {
-		/**
-		 * DataTables settings object
-		 *  @type     object
-		 *  @default  Passed in as first parameter to constructor
-		 */
-		dt: dtApi.settings()[0],
-
-		/**
-		 * DataTables API instance
-		 *  @type     DataTable.Api
-		 */
-		dtApi: dtApi,
-
-		/**
-		 * Pixel location of the top of the drawn table in the viewport
-		 *  @type     int
-		 *  @default  0
-		 */
-		tableTop: 0,
-
-		/**
-		 * Pixel location of the bottom of the drawn table in the viewport
-		 *  @type     int
-		 *  @default  0
-		 */
-		tableBottom: 0,
-
-		/**
-		 * Pixel location of the boundary for when the next data set should be loaded and drawn
-		 * when scrolling up the way.
-		 *  @type     int
-		 *  @default  0
-		 *  @private
-		 */
-		redrawTop: 0,
-
-		/**
-		 * Pixel location of the boundary for when the next data set should be loaded and drawn
-		 * when scrolling down the way. Note that this is actually calculated as the offset from
-		 * the top.
-		 *  @type     int
-		 *  @default  0
-		 *  @private
-		 */
-		redrawBottom: 0,
-
-		/**
-		 * Auto row height or not indicator
-		 *  @type     bool
-		 *  @default  0
-		 */
-		autoHeight: true,
-
-		/**
-		 * Number of rows calculated as visible in the visible viewport
-		 *  @type     int
-		 *  @default  0
-		 */
-		viewportRows: 0,
-
-		/**
-		 * setTimeout reference for state saving, used when state saving is enabled in the DataTable
-		 * and when the user scrolls the viewport in order to stop the cookie set taking too much
-		 * CPU!
-		 *  @type     int
-		 *  @default  0
-		 */
-		stateTO: null,
-
-		stateSaveThrottle: function () {},
-
-		/**
-		 * setTimeout reference for the redraw, used when server-side processing is enabled in the
-		 * DataTables in order to prevent DoSing the server
-		 *  @type     int
-		 *  @default  null
-		 */
-		drawTO: null,
-
-		heights: {
-			jump: null,
-			page: null,
-			virtual: null,
-			scroll: null,
-
-			/**
-			 * Height of rows in the table
-			 *  @type     int
-			 *  @default  0
-			 */
-			row: null,
-
-			/**
-			 * Pixel height of the viewport
-			 *  @type     int
-			 *  @default  0
-			 */
-			viewport: null,
-			labelFactor: 1
-		},
-
-		topRowFloat: 0,
-		scrollDrawDiff: null,
-		loaderVisible: false,
-		forceReposition: false,
-		baseRowTop: 0,
-		baseScrollTop: 0,
-		mousedown: false,
-		lastScrollTop: 0
-	};
-
-	// @todo The defaults should extend a `c` property and the internal settings
-	// only held in the `s` property. At the moment they are mixed
-	this.s = $.extend( this.s, Scroller.oDefaults, opts );
-
-	// Workaround for row height being read from height object (see above comment)
-	this.s.heights.row = this.s.rowHeight;
-
-	/**
-	 * DOM elements used by the class instance
-	 * @private
-	 * @namespace
-	 *
-	 */
-	this.dom = {
-		"force":    document.createElement('div'),
-		"label":    $('<div class="dts_label">0</div>'),
-		"scroller": null,
-		"table":    null,
-		"loader":   null
-	};
-
-	// Attach the instance to the DataTables instance so it can be accessed in
-	// future. Don't initialise Scroller twice on the same table
-	if ( this.s.dt.oScroller ) {
-		return;
-	}
-
-	this.s.dt.oScroller = this;
-
-	/* Let's do it */
-	this.construct();
-};
-
-
-
-$.extend( Scroller.prototype, {
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	 * Public methods - to be exposed via the DataTables API
-	 */
-
-	/**
-	 * Calculate and store information about how many rows are to be displayed
-	 * in the scrolling viewport, based on current dimensions in the browser's
-	 * rendering. This can be particularly useful if the table is initially
-	 * drawn in a hidden element - for example in a tab.
-	 *  @param {bool} [redraw=true] Redraw the table automatically after the recalculation, with
-	 *    the new dimensions forming the basis for the draw.
-	 *  @returns {void}
-	 */
-	measure: function ( redraw )
-	{
-		if ( this.s.autoHeight )
-		{
-			this._calcRowHeight();
-		}
-
-		var heights = this.s.heights;
-
-		if ( heights.row ) {
-			heights.viewport = this._parseHeight($(this.dom.scroller).css('max-height'));
-
-			this.s.viewportRows = parseInt( heights.viewport / heights.row, 10 )+1;
-			this.s.dt._iDisplayLength = this.s.viewportRows * this.s.displayBuffer;
-		}
-
-		var label = this.dom.label.outerHeight();
-		heights.labelFactor = (heights.viewport-label) / heights.scroll;
-
-		if ( redraw === undefined || redraw )
-		{
-			this.s.dt.oInstance.fnDraw( false );
-		}
-	},
-
-	/**
-	 * Get information about current displayed record range. This corresponds to
-	 * the information usually displayed in the "Info" block of the table.
-	 *
-	 * @returns {object} info as an object:
-	 *  {
-	 *      start: {int}, // the 0-indexed record at the top of the viewport
-	 *      end:   {int}, // the 0-indexed record at the bottom of the viewport
-	 *  }
-	*/
-	pageInfo: function()
-	{
-		var 
-			dt = this.s.dt,
-			iScrollTop = this.dom.scroller.scrollTop,
-			iTotal = dt.fnRecordsDisplay(),
-			iPossibleEnd = Math.ceil(this.pixelsToRow(iScrollTop + this.s.heights.viewport, false, this.s.ani));
-
-		return {
-			start: Math.floor(this.pixelsToRow(iScrollTop, false, this.s.ani)),
-			end: iTotal < iPossibleEnd ? iTotal-1 : iPossibleEnd-1
-		};
-	},
-
-	/**
-	 * Calculate the row number that will be found at the given pixel position
-	 * (y-scroll).
-	 *
-	 * Please note that when the height of the full table exceeds 1 million
-	 * pixels, Scroller switches into a non-linear mode for the scrollbar to fit
-	 * all of the records into a finite area, but this function returns a linear
-	 * value (relative to the last non-linear positioning).
-	 *  @param {int} pixels Offset from top to calculate the row number of
-	 *  @param {int} [intParse=true] If an integer value should be returned
-	 *  @param {int} [virtual=false] Perform the calculations in the virtual domain
-	 *  @returns {int} Row index
-	 */
-	pixelsToRow: function ( pixels, intParse, virtual )
-	{
-		var diff = pixels - this.s.baseScrollTop;
-		var row = virtual ?
-			(this._domain( 'physicalToVirtual', this.s.baseScrollTop ) + diff) / this.s.heights.row :
-			( diff / this.s.heights.row ) + this.s.baseRowTop;
-
-		return intParse || intParse === undefined ?
-			parseInt( row, 10 ) :
-			row;
-	},
-
-	/**
-	 * Calculate the pixel position from the top of the scrolling container for
-	 * a given row
-	 *  @param {int} iRow Row number to calculate the position of
-	 *  @returns {int} Pixels
-	 */
-	rowToPixels: function ( rowIdx, intParse, virtual )
-	{
-		var pixels;
-		var diff = rowIdx - this.s.baseRowTop;
-
-		if ( virtual ) {
-			pixels = this._domain( 'virtualToPhysical', this.s.baseScrollTop );
-			pixels += diff * this.s.heights.row;
-		}
-		else {
-			pixels = this.s.baseScrollTop;
-			pixels += diff * this.s.heights.row;
-		}
-
-		return intParse || intParse === undefined ?
-			parseInt( pixels, 10 ) :
-			pixels;
-	},
-
-
-	/**
-	 * Calculate the row number that will be found at the given pixel position (y-scroll)
-	 *  @param {int} row Row index to scroll to
-	 *  @param {bool} [animate=true] Animate the transition or not
-	 *  @returns {void}
-	 */
-	scrollToRow: function ( row, animate )
-	{
-		var that = this;
-		var ani = false;
-		var px = this.rowToPixels( row );
-
-		// We need to know if the table will redraw or not before doing the
-		// scroll. If it will not redraw, then we need to use the currently
-		// displayed table, and scroll with the physical pixels. Otherwise, we
-		// need to calculate the table's new position from the virtual
-		// transform.
-		var preRows = ((this.s.displayBuffer-1)/2) * this.s.viewportRows;
-		var drawRow = row - preRows;
-		if ( drawRow < 0 ) {
-			drawRow = 0;
-		}
-
-		if ( (px > this.s.redrawBottom || px < this.s.redrawTop) && this.s.dt._iDisplayStart !== drawRow ) {
-			ani = true;
-			px = this._domain( 'virtualToPhysical', row * this.s.heights.row );
-
-			// If we need records outside the current draw region, but the new
-			// scrolling position is inside that (due to the non-linear nature
-			// for larger numbers of records), we need to force position update.
-			if ( this.s.redrawTop < px && px < this.s.redrawBottom ) {
-				this.s.forceReposition = true;
-				animate = false;
-			}
-		}
-
-		if ( animate === undefined || animate )
-		{
-			this.s.ani = ani;
-			$(this.dom.scroller).animate( {
-				"scrollTop": px
-			}, function () {
-				// This needs to happen after the animation has completed and
-				// the final scroll event fired
-				setTimeout( function () {
-					that.s.ani = false;
-				}, 250 );
-			} );
-		}
-		else
-		{
-			$(this.dom.scroller).scrollTop( px );
-		}
-	},
-
-
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	 * Constructor
-	 */
-
-	/**
-	 * Initialisation for Scroller
-	 *  @returns {void}
-	 *  @private
-	 */
-	construct: function ()
-	{
-		var that = this;
-		var dt = this.s.dtApi;
-
-		/* Sanity check */
-		if ( !this.s.dt.oFeatures.bPaginate ) {
-			this.s.dt.oApi._fnLog( this.s.dt, 0, 'Pagination must be enabled for Scroller' );
-			return;
-		}
-
-		/* Insert a div element that we can use to force the DT scrolling container to
-		 * the height that would be required if the whole table was being displayed
-		 */
-		this.dom.force.style.position = "relative";
-		this.dom.force.style.top = "0px";
-		this.dom.force.style.left = "0px";
-		this.dom.force.style.width = "1px";
-
-		this.dom.scroller = $('div.'+this.s.dt.oClasses.sScrollBody, this.s.dt.nTableWrapper)[0];
-		this.dom.scroller.appendChild( this.dom.force );
-		this.dom.scroller.style.position = "relative";
-
-		this.dom.table = $('>table', this.dom.scroller)[0];
-		this.dom.table.style.position = "absolute";
-		this.dom.table.style.top = "0px";
-		this.dom.table.style.left = "0px";
-
-		// Add class to 'announce' that we are a Scroller table
-		$(dt.table().container()).addClass('dts DTS');
-
-		// Add a 'loading' indicator
-		if ( this.s.loadingIndicator )
-		{
-			this.dom.loader = $('<div class="dataTables_processing dts_loading">'+this.s.dt.oLanguage.sLoadingRecords+'</div>')
-				.css('display', 'none');
-
-			$(this.dom.scroller.parentNode)
-				.css('position', 'relative')
-				.append( this.dom.loader );
-		}
-
-		this.dom.label.appendTo(this.dom.scroller);
-
-		/* Initial size calculations */
-		if ( this.s.heights.row && this.s.heights.row != 'auto' )
-		{
-			this.s.autoHeight = false;
-		}
-
-		// Scrolling callback to see if a page change is needed
-		this.s.ingnoreScroll = true;
-		$(this.dom.scroller).on( 'scroll.dt-scroller', function (e) {
-			that._scroll.call( that );
-		} );
-
-		// In iOS we catch the touchstart event in case the user tries to scroll
-		// while the display is already scrolling
-		$(this.dom.scroller).on('touchstart.dt-scroller', function () {
-			that._scroll.call( that );
-		} );
-
-		$(this.dom.scroller)
-			.on('mousedown.dt-scroller', function () {
-				that.s.mousedown = true;
-			})
-			.on('mouseup.dt-scroller', function () {
-				that.s.labelVisible = false;
-				that.s.mousedown = false;
-				that.dom.label.css('display', 'none');
-			});
-
-		// On resize, update the information element, since the number of rows shown might change
-		$(window).on( 'resize.dt-scroller', function () {
-			that.measure( false );
-			that._info();
-		} );
-
-		// Add a state saving parameter to the DT state saving so we can restore the exact
-		// position of the scrolling.
-		var initialStateSave = true;
-		var loadedState = dt.state.loaded();
-
-		dt.on( 'stateSaveParams.scroller', function ( e, settings, data ) {
-			if ( initialStateSave && loadedState ) {
-				data.scroller = loadedState.scroller;
-				initialStateSave = false;
-			}
-			else {
-				// Need to used the saved position on init
-				data.scroller = {
-					topRow: that.s.topRowFloat,
-					baseScrollTop: that.s.baseScrollTop,
-					baseRowTop: that.s.baseRowTop,
-					scrollTop: that.s.lastScrollTop
-				};
-			}
-		} );
-
-		if ( loadedState && loadedState.scroller ) {
-			this.s.topRowFloat = loadedState.scroller.topRow;
-			this.s.baseScrollTop = loadedState.scroller.baseScrollTop;
-			this.s.baseRowTop = loadedState.scroller.baseRowTop;
-		}
-
-		this.measure( false );
-	
-		that.s.stateSaveThrottle = that.s.dt.oApi._fnThrottle( function () {
-			that.s.dtApi.state.save();
-		}, 500 );
-
-		dt.on( 'init.scroller', function () {
-			that.measure( false );
-
-			// Setting to `jump` will instruct _draw to calculate the scroll top
-			// position
-			that.s.scrollType = 'jump';
-			that._draw();
-
-			// Update the scroller when the DataTable is redrawn
-			dt.on( 'draw.scroller', function () {
-				that._draw();
-			});
-		} );
-
-		// Set height before the draw happens, allowing everything else to update
-		// on draw complete without worry for roder.
-		dt.on( 'preDraw.dt.scroller', function () {
-			that._scrollForce();
-		} );
-
-		// Destructor
-		dt.on( 'destroy.scroller', function () {
-			$(window).off( 'resize.dt-scroller' );
-			$(that.dom.scroller).off('.dt-scroller');
-			$(that.s.dt.nTable).off( '.scroller' );
-
-			$(that.s.dt.nTableWrapper).removeClass('DTS');
-			$('div.DTS_Loading', that.dom.scroller.parentNode).remove();
-
-			that.dom.table.style.position = "";
-			that.dom.table.style.top = "";
-			that.dom.table.style.left = "";
-		} );
-	},
-
-
-	/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-	 * Private methods
-	 */
-
-	/**
-	 * Automatic calculation of table row height. This is just a little tricky here as using
-	 * initialisation DataTables has tale the table out of the document, so we need to create
-	 * a new table and insert it into the document, calculate the row height and then whip the
-	 * table out.
-	 *  @returns {void}
-	 *  @private
-	 */
-	_calcRowHeight: function ()
-	{
-		var dt = this.s.dt;
-		var origTable = dt.nTable;
-		var nTable = origTable.cloneNode( false );
-		var tbody = $('<tbody/>').appendTo( nTable );
-		var container = $(
-			'<div class="'+dt.oClasses.sWrapper+' DTS">'+
-				'<div class="'+dt.oClasses.sScrollWrapper+'">'+
-					'<div class="'+dt.oClasses.sScrollBody+'"></div>'+
-				'</div>'+
-			'</div>'
-		);
-
-		// Want 3 rows in the sizing table so :first-child and :last-child
-		// CSS styles don't come into play - take the size of the middle row
-		$('tbody tr:lt(4)', origTable).clone().appendTo( tbody );
-        var rowsCount = $('tr', tbody).length;
-
-        if ( rowsCount === 1 ) {
-            tbody.prepend('<tr><td>&#160;</td></tr>');
-            tbody.append('<tr><td>&#160;</td></tr>');
-		}
-		else {
-            for (; rowsCount < 3; rowsCount++) {
-                tbody.append('<tr><td>&#160;</td></tr>');
-            }
-		}
-	
-		$('div.'+dt.oClasses.sScrollBody, container).append( nTable );
-
-		// If initialised using `dom`, use the holding element as the insert point
-		var insertEl = this.s.dt.nHolding || origTable.parentNode;
-
-		if ( ! $(insertEl).is(':visible') ) {
-			insertEl = 'body';
-		}
-
-		// Remove form element links as they might select over others (particularly radio and checkboxes)
-		container.find("input").removeAttr("name");
-
-		container.appendTo( insertEl );
-		this.s.heights.row = $('tr', tbody).eq(1).outerHeight();
-
-		container.remove();
-	},
-
-	/**
-	 * Draw callback function which is fired when the DataTable is redrawn. The main function of
-	 * this method is to position the drawn table correctly the scrolling container for the rows
-	 * that is displays as a result of the scrolling position.
-	 *  @returns {void}
-	 *  @private
-	 */
-	_draw: function ()
-	{
-		var
-			that = this,
-			heights = this.s.heights,
-			iScrollTop = this.dom.scroller.scrollTop,
-			iTableHeight = $(this.s.dt.nTable).height(),
-			displayStart = this.s.dt._iDisplayStart,
-			displayLen = this.s.dt._iDisplayLength,
-			displayEnd = this.s.dt.fnRecordsDisplay();
-
-		// Disable the scroll event listener while we are updating the DOM
-		this.s.skip = true;
-
-		// If paging is reset
-		if ( (this.s.dt.bSorted || this.s.dt.bFiltered) && displayStart === 0 && !this.s.dt._drawHold ) {
-			this.s.topRowFloat = 0;
-		}
-
-		iScrollTop = this.s.scrollType === 'jump' ?
-			this._domain( 'virtualToPhysical', this.s.topRowFloat * heights.row ) :
-			iScrollTop;
-
-		// Store positional information so positional calculations can be based
-		// upon the current table draw position
-		this.s.baseScrollTop = iScrollTop;
-		this.s.baseRowTop = this.s.topRowFloat;
-
-		// Position the table in the virtual scroller
-		var tableTop = iScrollTop - ((this.s.topRowFloat - displayStart) * heights.row);
-		if ( displayStart === 0 ) {
-			tableTop = 0;
-		}
-		else if ( displayStart + displayLen >= displayEnd ) {
-			tableTop = heights.scroll - iTableHeight;
-		}
-
-		this.dom.table.style.top = tableTop+'px';
-
-		/* Cache some information for the scroller */
-		this.s.tableTop = tableTop;
-		this.s.tableBottom = iTableHeight + this.s.tableTop;
-
-		// Calculate the boundaries for where a redraw will be triggered by the
-		// scroll event listener
-		var boundaryPx = (iScrollTop - this.s.tableTop) * this.s.boundaryScale;
-		this.s.redrawTop = iScrollTop - boundaryPx;
-		this.s.redrawBottom = iScrollTop + boundaryPx > heights.scroll - heights.viewport - heights.row ?
-			heights.scroll - heights.viewport - heights.row :
-			iScrollTop + boundaryPx;
-
-		this.s.skip = false;
-
-		// Restore the scrolling position that was saved by DataTable's state
-		// saving Note that this is done on the second draw when data is Ajax
-		// sourced, and the first draw when DOM soured
-		if ( this.s.dt.oFeatures.bStateSave && this.s.dt.oLoadedState !== null &&
-			 typeof this.s.dt.oLoadedState.scroller != 'undefined' )
-		{
-			// A quirk of DataTables is that the draw callback will occur on an
-			// empty set if Ajax sourced, but not if server-side processing.
-			var ajaxSourced = (this.s.dt.sAjaxSource || that.s.dt.ajax) && ! this.s.dt.oFeatures.bServerSide ?
-				true :
-				false;
-
-			if ( ( ajaxSourced && this.s.dt.iDraw == 2) ||
-			     (!ajaxSourced && this.s.dt.iDraw == 1) )
-			{
-				setTimeout( function () {
-					$(that.dom.scroller).scrollTop( that.s.dt.oLoadedState.scroller.scrollTop );
-
-					// In order to prevent layout thrashing we need another
-					// small delay
-					setTimeout( function () {
-						that.s.ingnoreScroll = false;
-					}, 0 );
-				}, 0 );
-			}
-		}
-		else {
-			that.s.ingnoreScroll = false;
-		}
-
-		// Because of the order of the DT callbacks, the info update will
-		// take precedence over the one we want here. So a 'thread' break is
-		// needed.  Only add the thread break if bInfo is set
-		if ( this.s.dt.oFeatures.bInfo ) {
-			setTimeout( function () {
-				that._info.call( that );
-			}, 0 );
-		}
-
-		// Hide the loading indicator
-		if ( this.dom.loader && this.s.loaderVisible ) {
-			this.dom.loader.css( 'display', 'none' );
-			this.s.loaderVisible = false;
-		}
-	},
-
-	/**
-	 * Convert from one domain to another. The physical domain is the actual
-	 * pixel count on the screen, while the virtual is if we had browsers which
-	 * had scrolling containers of infinite height (i.e. the absolute value)
-	 *
-	 *  @param {string} dir Domain transform direction, `virtualToPhysical` or
-	 *    `physicalToVirtual` 
-	 *  @returns {number} Calculated transform
-	 *  @private
-	 */
-	_domain: function ( dir, val )
-	{
-		var heights = this.s.heights;
-		var diff;
-		var magic = 10000; // the point at which the non-linear calculations start to happen
-
-		// If the virtual and physical height match, then we use a linear
-		// transform between the two, allowing the scrollbar to be linear
-		if ( heights.virtual === heights.scroll ) {
-			return val;
-		}
-
-		// In the first 10k pixels and the last 10k pixels, we want the scrolling
-		// to be linear. After that it can be non-linear. It would be unusual for
-		// anyone to mouse wheel through that much.
-		if ( val < magic ) {
-			return val;
-		}
-		else if ( dir === 'virtualToPhysical' && val >= heights.virtual - magic ) {
-			diff = heights.virtual - val;
-			return heights.scroll - diff;
-		}
-		else if ( dir === 'physicalToVirtual' && val >= heights.scroll - magic ) {
-			diff = heights.scroll - val;
-			return heights.virtual - diff;
-		}
-
-		// Otherwise, we want a non-linear scrollbar to take account of the
-		// redrawing regions at the start and end of the table, otherwise these
-		// can stutter badly - on large tables 30px (for example) scroll might
-		// be hundreds of rows, so the table would be redrawing every few px at
-		// the start and end. Use a simple linear eq. to stop this, effectively
-		// causing a kink in the scrolling ratio. It does mean the scrollbar is
-		// non-linear, but with such massive data sets, the scrollbar is going
-		// to be a best guess anyway
-		var m = (heights.virtual - magic - magic) / (heights.scroll - magic - magic);
-		var c = magic - (m*magic);
-
-		return dir === 'virtualToPhysical' ?
-			(val-c) / m :
-			(m*val) + c;
-	},
-
-	/**
-	 * Update any information elements that are controlled by the DataTable based on the scrolling
-	 * viewport and what rows are visible in it. This function basically acts in the same way as
-	 * _fnUpdateInfo in DataTables, and effectively replaces that function.
-	 *  @returns {void}
-	 *  @private
-	 */
-	_info: function ()
-	{
-		if ( !this.s.dt.oFeatures.bInfo )
-		{
-			return;
-		}
-
-		var
-			dt = this.s.dt,
-			language = dt.oLanguage,
-			iScrollTop = this.dom.scroller.scrollTop,
-			iStart = Math.floor( this.pixelsToRow(iScrollTop, false, this.s.ani)+1 ),
-			iMax = dt.fnRecordsTotal(),
-			iTotal = dt.fnRecordsDisplay(),
-			iPossibleEnd = Math.ceil( this.pixelsToRow(iScrollTop+this.s.heights.viewport, false, this.s.ani) ),
-			iEnd = iTotal < iPossibleEnd ? iTotal : iPossibleEnd,
-			sStart = dt.fnFormatNumber( iStart ),
-			sEnd = dt.fnFormatNumber( iEnd ),
-			sMax = dt.fnFormatNumber( iMax ),
-			sTotal = dt.fnFormatNumber( iTotal ),
-			sOut;
-
-		if ( dt.fnRecordsDisplay() === 0 &&
-			   dt.fnRecordsDisplay() == dt.fnRecordsTotal() )
-		{
-			/* Empty record set */
-			sOut = language.sInfoEmpty+ language.sInfoPostFix;
-		}
-		else if ( dt.fnRecordsDisplay() === 0 )
-		{
-			/* Empty record set after filtering */
-			sOut = language.sInfoEmpty +' '+
-				language.sInfoFiltered.replace('_MAX_', sMax)+
-					language.sInfoPostFix;
-		}
-		else if ( dt.fnRecordsDisplay() == dt.fnRecordsTotal() )
-		{
-			/* Normal record set */
-			sOut = language.sInfo.
-					replace('_START_', sStart).
-					replace('_END_',   sEnd).
-					replace('_MAX_',   sMax).
-					replace('_TOTAL_', sTotal)+
-				language.sInfoPostFix;
-		}
-		else
-		{
-			/* Record set after filtering */
-			sOut = language.sInfo.
-					replace('_START_', sStart).
-					replace('_END_',   sEnd).
-					replace('_MAX_',   sMax).
-					replace('_TOTAL_', sTotal) +' '+
-				language.sInfoFiltered.replace(
-					'_MAX_',
-					dt.fnFormatNumber(dt.fnRecordsTotal())
-				)+
-				language.sInfoPostFix;
-		}
-
-		var callback = language.fnInfoCallback;
-		if ( callback ) {
-			sOut = callback.call( dt.oInstance,
-				dt, iStart, iEnd, iMax, iTotal, sOut
-			);
-		}
-
-		var n = dt.aanFeatures.i;
-		if ( typeof n != 'undefined' )
-		{
-			for ( var i=0, iLen=n.length ; i<iLen ; i++ )
-			{
-				$(n[i]).html( sOut );
-			}
-		}
-
-		// DT doesn't actually (yet) trigger this event, but it will in future
-		$(dt.nTable).triggerHandler( 'info.dt' );
-	},
-
-	/**
-	 * Parse CSS height property string as number
-	 *
-	 * An attempt is made to parse the string as a number. Currently supported units are 'px',
-	 * 'vh', and 'rem'. 'em' is partially supported; it works as long as the parent element's
-	 * font size matches the body element. Zero is returned for unrecognized strings.
-	 *  @param {string} cssHeight CSS height property string
-	 *  @returns {number} height
-	 *  @private
-	 */
-	_parseHeight: function(cssHeight) {
-		var height;
-		var matches = /^([+-]?(?:\d+(?:\.\d+)?|\.\d+))(px|em|rem|vh)$/.exec(cssHeight);
-
-		if (matches === null) {
-			return 0;
-		}
-
-		var value = parseFloat(matches[1]);
-		var unit = matches[2];
-
-		if ( unit === 'px' ) {
-			height = value;
-		}
-		else if ( unit === 'vh' ) {
-			height = ( value / 100 ) * $(window).height();
-		}
-		else if ( unit === 'rem' ) {
-			height = value * parseFloat($(':root').css('font-size'));
-		}
-		else if ( unit === 'em' ) {
-			height = value * parseFloat($('body').css('font-size'));
-		}
-
-		return height ?
-			height :
-			0;
-	},
-
-	/**
-	 * Scrolling function - fired whenever the scrolling position is changed.
-	 * This method needs to use the stored values to see if the table should be
-	 * redrawn as we are moving towards the end of the information that is
-	 * currently drawn or not. If needed, then it will redraw the table based on
-	 * the new position.
-	 *  @returns {void}
-	 *  @private
-	 */
-	_scroll: function ()
-	{
-		var
-			that = this,
-			heights = this.s.heights,
-			iScrollTop = this.dom.scroller.scrollTop,
-			iTopRow;
-
-		if ( this.s.skip ) {
-			return;
-		}
-
-		if ( this.s.ingnoreScroll ) {
-			return;
-		}
-
-		if ( iScrollTop === this.s.lastScrollTop ) {
-			return;
-		}
-
-		/* If the table has been sorted or filtered, then we use the redraw that
-		 * DataTables as done, rather than performing our own
-		 */
-		if ( this.s.dt.bFiltered || this.s.dt.bSorted ) {
-			this.s.lastScrollTop = 0;
-			return;
-		}
-
-		/* Update the table's information display for what is now in the viewport */
-		this._info();
-
-		/* We don't want to state save on every scroll event - that's heavy
-		 * handed, so use a timeout to update the state saving only when the
-		 * scrolling has finished
-		 */
-		clearTimeout( this.s.stateTO );
-		this.s.stateTO = setTimeout( function () {
-			that.s.dtApi.state.save();
-		}, 250 );
-
-		this.s.scrollType = Math.abs(iScrollTop - this.s.lastScrollTop) > heights.viewport ?
-			'jump' :
-			'cont';
-
-		this.s.topRowFloat = this.s.scrollType === 'cont' ?
-			this.pixelsToRow( iScrollTop, false, false ) :
-			this._domain( 'physicalToVirtual', iScrollTop ) / heights.row;
-
-		if ( this.s.topRowFloat < 0 ) {
-			this.s.topRowFloat = 0;
-		}
-
-		/* Check if the scroll point is outside the trigger boundary which would required
-		 * a DataTables redraw
-		 */
-		if ( this.s.forceReposition || iScrollTop < this.s.redrawTop || iScrollTop > this.s.redrawBottom ) {
-			var preRows = Math.ceil( ((this.s.displayBuffer-1)/2) * this.s.viewportRows );
-
-			iTopRow = parseInt(this.s.topRowFloat, 10) - preRows;
-			this.s.forceReposition = false;
-
-			if ( iTopRow <= 0 ) {
-				/* At the start of the table */
-				iTopRow = 0;
-			}
-			else if ( iTopRow + this.s.dt._iDisplayLength > this.s.dt.fnRecordsDisplay() ) {
-				/* At the end of the table */
-				iTopRow = this.s.dt.fnRecordsDisplay() - this.s.dt._iDisplayLength;
-				if ( iTopRow < 0 ) {
-					iTopRow = 0;
-				}
-			}
-			else if ( iTopRow % 2 !== 0 ) {
-				// For the row-striping classes (odd/even) we want only to start
-				// on evens otherwise the stripes will change between draws and
-				// look rubbish
-				iTopRow++;
-			}
-
-			// Store calcuated value, in case the following condition is not met, but so
-			// that the draw function will still use it.
-			this.s.targetTop = iTopRow;
-
-			if ( iTopRow != this.s.dt._iDisplayStart ) {
-				/* Cache the new table position for quick lookups */
-				this.s.tableTop = $(this.s.dt.nTable).offset().top;
-				this.s.tableBottom = $(this.s.dt.nTable).height() + this.s.tableTop;
-
-				var draw = function () {
-					that.s.dt._iDisplayStart = that.s.targetTop;
-					that.s.dt.oApi._fnDraw( that.s.dt );
-				};
-
-				/* Do the DataTables redraw based on the calculated start point - note that when
-				 * using server-side processing we introduce a small delay to not DoS the server...
-				 */
-				if ( this.s.dt.oFeatures.bServerSide ) {
-					this.s.forceReposition = true;
-
-					clearTimeout( this.s.drawTO );
-					this.s.drawTO = setTimeout( draw, this.s.serverWait );
-				}
-				else {
-					draw();
-				}
-
-				if ( this.dom.loader && ! this.s.loaderVisible ) {
-					this.dom.loader.css( 'display', 'block' );
-					this.s.loaderVisible = true;
-				}
-			}
-		}
-		else {
-			this.s.topRowFloat = this.pixelsToRow( iScrollTop, false, true );
-		}
-
-		this.s.lastScrollTop = iScrollTop;
-		this.s.stateSaveThrottle();
-
-		if ( this.s.scrollType === 'jump' && this.s.mousedown ) {
-			this.s.labelVisible = true;
-		}
-		if (this.s.labelVisible) {
-			this.dom.label
-				.html( this.s.dt.fnFormatNumber( parseInt( this.s.topRowFloat, 10 )+1 ) )
-				.css( 'top', iScrollTop + (iScrollTop * heights.labelFactor ) )
-				.css( 'display', 'block' );
-		}
-	},
-
-	/**
-	 * Force the scrolling container to have height beyond that of just the
-	 * table that has been drawn so the user can scroll the whole data set.
-	 *
-	 * Note that if the calculated required scrolling height exceeds a maximum
-	 * value (1 million pixels - hard-coded) the forcing element will be set
-	 * only to that maximum value and virtual / physical domain transforms will
-	 * be used to allow Scroller to display tables of any number of records.
-	 *  @returns {void}
-	 *  @private
-	 */
-	_scrollForce: function ()
-	{
-		var heights = this.s.heights;
-		var max = 1000000;
-
-		heights.virtual = heights.row * this.s.dt.fnRecordsDisplay();
-		heights.scroll = heights.virtual;
-
-		if ( heights.scroll > max ) {
-			heights.scroll = max;
-		}
-
-		// Minimum height so there is always a row visible (the 'no rows found'
-		// if reduced to zero filtering)
-		this.dom.force.style.height = heights.scroll > this.s.heights.row ?
-			heights.scroll+'px' :
-			this.s.heights.row+'px';
-	}
-} );
-
-
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Statics
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-
-/**
- * Scroller default settings for initialisation
- *  @namespace
- *  @name Scroller.defaults
- *  @static
- */
-Scroller.defaults = {
-	/**
-	 * Scroller uses the boundary scaling factor to decide when to redraw the table - which it
-	 * typically does before you reach the end of the currently loaded data set (in order to
-	 * allow the data to look continuous to a user scrolling through the data). If given as 0
-	 * then the table will be redrawn whenever the viewport is scrolled, while 1 would not
-	 * redraw the table until the currently loaded data has all been shown. You will want
-	 * something in the middle - the default factor of 0.5 is usually suitable.
-	 *  @type     float
-	 *  @default  0.5
-	 *  @static
-	 */
-	boundaryScale: 0.5,
-
-	/**
-	 * The display buffer is what Scroller uses to calculate how many rows it should pre-fetch
-	 * for scrolling. Scroller automatically adjusts DataTables' display length to pre-fetch
-	 * rows that will be shown in "near scrolling" (i.e. just beyond the current display area).
-	 * The value is based upon the number of rows that can be displayed in the viewport (i.e.
-	 * a value of 1), and will apply the display range to records before before and after the
-	 * current viewport - i.e. a factor of 3 will allow Scroller to pre-fetch 1 viewport's worth
-	 * of rows before the current viewport, the current viewport's rows and 1 viewport's worth
-	 * of rows after the current viewport. Adjusting this value can be useful for ensuring
-	 * smooth scrolling based on your data set.
-	 *  @type     int
-	 *  @default  7
-	 *  @static
-	 */
-	displayBuffer: 9,
-
-	/**
-	 * Show (or not) the loading element in the background of the table. Note that you should
-	 * include the dataTables.scroller.css file for this to be displayed correctly.
-	 *  @type     boolean
-	 *  @default  false
-	 *  @static
-	 */
-	loadingIndicator: false,
-
-	/**
-	 * Scroller will attempt to automatically calculate the height of rows for it's internal
-	 * calculations. However the height that is used can be overridden using this parameter.
-	 *  @type     int|string
-	 *  @default  auto
-	 *  @static
-	 */
-	rowHeight: "auto",
-
-	/**
-	 * When using server-side processing, Scroller will wait a small amount of time to allow
-	 * the scrolling to finish before requesting more data from the server. This prevents
-	 * you from DoSing your own server! The wait time can be configured by this parameter.
-	 *  @type     int
-	 *  @default  200
-	 *  @static
-	 */
-	serverWait: 200
-};
-
-Scroller.oDefaults = Scroller.defaults;
-
-
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Constants
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-/**
- * Scroller version
- *  @type      String
- *  @default   See code
- *  @name      Scroller.version
- *  @static
- */
-Scroller.version = "2.0.3";
-
-
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Initialisation
- * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-// Attach a listener to the document which listens for DataTables initialisation
-// events so we can automatically initialise
-$(document).on( 'preInit.dt.dtscroller', function (e, settings) {
-	if ( e.namespace !== 'dt' ) {
-		return;
-	}
-
-	var init = settings.oInit.scroller;
-	var defaults = DataTable.defaults.scroller;
-
-	if ( init || defaults ) {
-		var opts = $.extend( {}, init, defaults );
-
-		if ( init !== false ) {
-			new Scroller( settings, opts  );
-		}
-	}
-} );
-
-
-// Attach Scroller to DataTables so it can be accessed as an 'extra'
-$.fn.dataTable.Scroller = Scroller;
-$.fn.DataTable.Scroller = Scroller;
-
-
-// DataTables 1.10 API method aliases
-var Api = $.fn.dataTable.Api;
-
-Api.register( 'scroller()', function () {
-	return this;
-} );
-
-// Undocumented and deprecated - is it actually useful at all?
-Api.register( 'scroller().rowToPixels()', function ( rowIdx, intParse, virtual ) {
-	var ctx = this.context;
-
-	if ( ctx.length && ctx[0].oScroller ) {
-		return ctx[0].oScroller.rowToPixels( rowIdx, intParse, virtual );
-	}
-	// undefined
-} );
-
-// Undocumented and deprecated - is it actually useful at all?
-Api.register( 'scroller().pixelsToRow()', function ( pixels, intParse, virtual ) {
-	var ctx = this.context;
-
-	if ( ctx.length && ctx[0].oScroller ) {
-		return ctx[0].oScroller.pixelsToRow( pixels, intParse, virtual );
-	}
-	// undefined
-} );
-
-// `scroller().scrollToRow()` is undocumented and deprecated. Use `scroller.toPosition()
-Api.register( ['scroller().scrollToRow()', 'scroller.toPosition()'], function ( idx, ani ) {
-	this.iterator( 'table', function ( ctx ) {
-		if ( ctx.oScroller ) {
-			ctx.oScroller.scrollToRow( idx, ani );
-		}
-	} );
-
-	return this;
-} );
-
-Api.register( 'row().scrollTo()', function ( ani ) {
-	var that = this;
-
-	this.iterator( 'row', function ( ctx, rowIdx ) {
-		if ( ctx.oScroller ) {
-			var displayIdx = that
-				.rows( { order: 'applied', search: 'applied' } )
-				.indexes()
-				.indexOf( rowIdx );
-
-			ctx.oScroller.scrollToRow( displayIdx, ani );
-		}
-	} );
-
-	return this;
-} );
-
-Api.register( 'scroller.measure()', function ( redraw ) {
-	this.iterator( 'table', function ( ctx ) {
-		if ( ctx.oScroller ) {
-			ctx.oScroller.measure( redraw );
-		}
-	} );
-
-	return this;
-} );
-
-Api.register( 'scroller.page()', function() {
-	var ctx = this.context;
-
-	if ( ctx.length && ctx[0].oScroller ) {
-		return ctx[0].oScroller.pageInfo();
-	}
-	// undefined
-} );
-
-return Scroller;
-}));
-
-
-/*! SearchBuilder 1.0.1
- * ©2020 SpryMedia Ltd - datatables.net/license/mit
- */
-(function () {
-	'use strict';
-
-	/*! DateTime picker for DataTables.net v1.0.1
-	 *
-	 * ©2020 SpryMedia Ltd, all rights reserved.
-	 * License: MIT datatables.net/license/mit
-	 */
-
-	/**
-	 * @summary     DateTime picker for DataTables.net
-	 * @version     1.0.1
-	 * @file        dataTables.dateTime.js
-	 * @author      SpryMedia Ltd
-	 * @contact     www.datatables.net/contact
-	 */
-	(function( factory ){
-		if ( typeof define === 'function' && define.amd ) {
-			// AMD
-			define( ['jquery'], function ( $ ) {
-				return factory( $, window, document );
-			} );
-		}
-		else if ( typeof exports === 'object' ) {
-			// CommonJS
-			module.exports = function (root, $) {
-				if ( ! root ) {
-					root = window;
-				}
-
-				return factory( $, root, root.document );
-			};
-		}
-		else {
-			// Browser
-			factory( jQuery, window, document );
-		}
-	}(function( $, window, document, undefined$1 ) {
-
-	// Support libraries which support a Moment like API
-	var dateLib = window.moment
-		? window.moment
-		: window.dayjs
-			? window.dayjs
-			: null;
-
-	/*
-	 * This file provides a DateTime GUI picker (calendar and time input). Only the
-	 * format YYYY-MM-DD is supported without additional software, but the end user
-	 * experience can be greatly enhanced by including the momentjs or dayjs library
-	 * which provide date / time parsing and formatting options.
-	 *
-	 * This functionality is required because the HTML5 date and datetime input
-	 * types are not widely supported in desktop browsers.
-	 *
-	 * Constructed by using:
-	 *
-	 *     new DateTime( input, opts )
-	 *
-	 * where `input` is the HTML input element to use and `opts` is an object of
-	 * options based on the `DateTime.defaults` object.
-	 */
-	var DateTime = function ( input, opts ) {
-		this.c = $.extend( true, {}, DateTime.defaults, opts );
-		var classPrefix = this.c.classPrefix;
-		var i18n = this.c.i18n;
-
-		// Only IS8601 dates are supported without moment pr dayjs
-		if ( ! dateLib && this.c.format !== 'YYYY-MM-DD' ) {
-			throw "DateTime: Without momentjs or dayjs only the format 'YYYY-MM-DD' can be used";
-		}
-
-		// Min and max need to be `Date` objects in the config
-		if (typeof this.c.minDate === 'string') {
-			this.c.minDate = new Date(this.c.minDate);
-		}
-		if (typeof this.c.maxDate === 'string') {
-			this.c.maxDate = new Date(this.c.maxDate);
-		}
-
-		// DOM structure
-		var structure = $(
-			'<div class="'+classPrefix+'">'+
-				'<div class="'+classPrefix+'-date">'+
-					'<div class="'+classPrefix+'-title">'+
-						'<div class="'+classPrefix+'-iconLeft">'+
-							'<button>'+i18n.previous+'</button>'+
-						'</div>'+
-						'<div class="'+classPrefix+'-iconRight">'+
-							'<button>'+i18n.next+'</button>'+
-						'</div>'+
-						'<div class="'+classPrefix+'-label">'+
-							'<span></span>'+
-							'<select class="'+classPrefix+'-month"></select>'+
-						'</div>'+
-						'<div class="'+classPrefix+'-label">'+
-							'<span></span>'+
-							'<select class="'+classPrefix+'-year"></select>'+
-						'</div>'+
-					'</div>'+
-					'<div class="'+classPrefix+'-calendar"></div>'+
-				'</div>'+
-				'<div class="'+classPrefix+'-time">'+
-					'<div class="'+classPrefix+'-hours"></div>'+
-					'<div class="'+classPrefix+'-minutes"></div>'+
-					'<div class="'+classPrefix+'-seconds"></div>'+
-				'</div>'+
-				'<div class="'+classPrefix+'-error"></div>'+
-			'</div>'
-		);
-
-		this.dom = {
-			container: structure,
-			date:      structure.find( '.'+classPrefix+'-date' ),
-			title:     structure.find( '.'+classPrefix+'-title' ),
-			calendar:  structure.find( '.'+classPrefix+'-calendar' ),
-			time:      structure.find( '.'+classPrefix+'-time' ),
-			error:     structure.find( '.'+classPrefix+'-error' ),
-			input:     $(input)
-		};
-
-		this.s = {
-			/** @type {Date} Date value that the picker has currently selected */
-			d: null,
-
-			/** @type {Date} Date of the calendar - might not match the value */
-			display: null,
-
-			/** @type {number} Used to select minutes in a range where the range base is itself unavailable */
-			minutesRange: null,
-
-			/** @type {number} Used to select minutes in a range where the range base is itself unavailable */
-			secondsRange: null,
-
-			/** @type {String} Unique namespace string for this instance */
-			namespace: 'dateime-'+(DateTime._instance++),
-
-			/** @type {Object} Parts of the picker that should be shown */
-			parts: {
-				date:    this.c.format.match( /[YMD]|L(?!T)|l/ ) !== null,
-				time:    this.c.format.match( /[Hhm]|LT|LTS/ ) !== null,
-				seconds: this.c.format.indexOf( 's' )   !== -1,
-				hours12: this.c.format.match( /[haA]/ ) !== null
-			}
-		};
-
-		this.dom.container
-			.append( this.dom.date )
-			.append( this.dom.time )
-			.append( this.dom.error );
-
-		this.dom.date
-			.append( this.dom.title )
-			.append( this.dom.calendar );
-
-		this._constructor();
-	};
-
-	$.extend( DateTime.prototype, {
-		/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-		 * Public
-		 */
-		
-		/**
-		 * Destroy the control
-		 */
-		destroy: function () {
-			this._hide(true);
-			this.dom.container.off().empty();
-			this.dom.input.off('.datetime');
-		},
-
-		errorMsg: function ( msg ) {
-			var error = this.dom.error;
-
-			if ( msg ) {
-				error.html( msg );
-			}
-			else {
-				error.empty();
-			}
-
-			return this;
-		},
-
-		hide: function () {
-			this._hide();
-
-			return this;
-		},
-
-		max: function ( date ) {
-			this.c.maxDate = typeof date === 'string'
-				? new Date(date)
-				: date;
-
-			this._optionsTitle();
-			this._setCalander();
-
-			return this;
-		},
-
-		min: function ( date ) {
-			this.c.minDate = typeof date === 'string'
-				? new Date(date)
-				: date;
-
-			this._optionsTitle();
-			this._setCalander();
-
-			return this;
-		},
-
-		/**
-		 * Check if an element belongs to this control
-		 *
-		 * @param  {node} node Element to check
-		 * @return {boolean}   true if owned by this control, false otherwise
-		 */
-		owns: function ( node ) {
-			return $(node).parents().filter( this.dom.container ).length > 0;
-		},
-
-		/**
-		 * Get / set the value
-		 *
-		 * @param  {string|Date} set   Value to set
-		 * @param  {boolean} [write=true] Flag to indicate if the formatted value
-		 *   should be written into the input element
-		 */
-		val: function ( set, write ) {
-			if ( set === undefined$1 ) {
-				return this.s.d;
-			}
-
-			if ( set instanceof Date ) {
-				this.s.d = this._dateToUtc( set );
-			}
-			else if ( set === null || set === '' ) {
-				this.s.d = null;
-			}
-			else if ( set === '--now' ) {
-				this.s.d = new Date();
-			}
-			else if ( typeof set === 'string' ) {
-				if ( dateLib ) {
-					// Use moment or dayjs if possible (even for ISO8601 strings, since it
-					// will correctly handle 0000-00-00 and the like)
-					var m = dateLib.utc( set, this.c.format, this.c.locale, this.c.strict );
-					this.s.d = m.isValid() ? m.toDate() : null;
-				}
-				else {
-					// Else must be using ISO8601 without a date library (constructor would
-					// have thrown an error otherwise)
-					var match = set.match(/(\d{4})\-(\d{2})\-(\d{2})/ );
-					this.s.d = match ?
-						new Date( Date.UTC(match[1], match[2]-1, match[3]) ) :
-						null;
-				}
-			}
-
-			if ( write || write === undefined$1 ) {
-				if ( this.s.d ) {
-					this._writeOutput();
-				}
-				else {
-					// The input value was not valid...
-					this.dom.input.val( set );
-				}
-			}
-
-			// We need a date to be able to display the calendar at all
-			if ( ! this.s.d ) {
-				this.s.d = this._dateToUtc( new Date() );
-			}
-
-			this.s.display = new Date( this.s.d.toString() );
-
-			// Set the day of the month to be 1 so changing between months doesn't
-	        // run into issues when going from day 31 to 28 (for example)
-			this.s.display.setUTCDate( 1 );
-
-			// Update the display elements for the new value
-			this._setTitle();
-			this._setCalander();
-			this._setTime();
-
-			return this;
-		},
-
-
-		/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-		 * Constructor
-		 */
-		
-		/**
-		 * Build the control and assign initial event handlers
-		 *
-		 * @private
-		 */
-		_constructor: function () {
-			var that = this;
-			var classPrefix = this.c.classPrefix;
-			var onChange = function () {
-				that.c.onChange.call( that, that.dom.input.val(), that.s.d, that.dom.input );
-			};
-
-			if ( ! this.s.parts.date ) {
-				this.dom.date.css( 'display', 'none' );
-			}
-
-			if ( ! this.s.parts.time ) {
-				this.dom.time.css( 'display', 'none' );
-			}
-
-			if ( ! this.s.parts.seconds ) {
-				this.dom.time.children('div.'+classPrefix+'-seconds').remove();
-				this.dom.time.children('span').eq(1).remove();
-			}
-
-			// Render the options
-			this._optionsTitle();
-
-			window.allan = this;
-
-			// When attached to a hidden input, we always show the input picker, and
-			// do so inline
-			if (this.dom.input.attr('type') === 'hidden') {
-				this.dom.container.addClass('inline');
-				this.c.attachTo = 'input';
-
-				this.val( this.dom.input.val(), false );
-				this._show();
-			}
-
-			// Trigger the display of the widget when clicking or focusing on the
-			// input element
-			this.dom.input
-				.attr('autocomplete', 'off')
-				.on('focus.datetime click.datetime', function () {
-					// If already visible - don't do anything
-					if ( that.dom.container.is(':visible') || that.dom.input.is(':disabled') ) {
-						return;
-					}
-
-					// In case the value has changed by text
-					that.val( that.dom.input.val(), false );
-
-					that._show();
-				} )
-				.on('keyup.datetime', function () {
-					// Update the calendar's displayed value as the user types
-					if ( that.dom.container.is(':visible') ) {
-						that.val( that.dom.input.val(), false );
-					}
-				} );
-
-			// Main event handlers for input in the widget
-			this.dom.container
-				.on( 'change', 'select', function () {
-					var select = $(this);
-					var val = select.val();
-
-					if ( select.hasClass(classPrefix+'-month') ) {
-						// Month select
-						that._correctMonth( that.s.display, val );
-						that._setTitle();
-						that._setCalander();
-					}
-					else if ( select.hasClass(classPrefix+'-year') ) {
-						// Year select
-						that.s.display.setUTCFullYear( val );
-						that._setTitle();
-						that._setCalander();
-					}
-					else if ( select.hasClass(classPrefix+'-hours') || select.hasClass(classPrefix+'-ampm') ) {
-						// Hours - need to take account of AM/PM input if present
-						if ( that.s.parts.hours12 ) {
-							var hours = $(that.dom.container).find('.'+classPrefix+'-hours').val() * 1;
-							var pm = $(that.dom.container).find('.'+classPrefix+'-ampm').val() === 'pm';
-
-							that.s.d.setUTCHours( hours === 12 && !pm ?
-								0 :
-								pm && hours !== 12 ?
-									hours + 12 :
-									hours
-							);
-						}
-						else {
-							that.s.d.setUTCHours( val );
-						}
-
-						that._setTime();
-						that._writeOutput( true );
-
-						onChange();
-					}
-					else if ( select.hasClass(classPrefix+'-minutes') ) {
-						// Minutes select
-						that.s.d.setUTCMinutes( val );
-						that._setTime();
-						that._writeOutput( true );
-
-						onChange();
-					}
-					else if ( select.hasClass(classPrefix+'-seconds') ) {
-						// Seconds select
-						that.s.d.setSeconds( val );
-						that._setTime();
-						that._writeOutput( true );
-
-						onChange();
-					}
-
-					that.dom.input.focus();
-					that._position();
-				} )
-				.on( 'click', function (e) {
-					var d = that.s.d;
-					var nodeName = e.target.nodeName.toLowerCase();
-					var target = nodeName === 'span' ?
-						e.target.parentNode :
-						e.target;
-
-					nodeName = target.nodeName.toLowerCase();
-
-					if ( nodeName === 'select' ) {
-						return;
-					}
-
-					e.stopPropagation();
-
-					if ( nodeName === 'button' ) {
-						var button = $(target);
-						var parent = button.parent();
-
-						if ( parent.hasClass('disabled') && ! parent.hasClass('range') ) {
-							button.blur();
-							return;
-						}
-
-						if ( parent.hasClass(classPrefix+'-iconLeft') ) {
-							// Previous month
-							that.s.display.setUTCMonth( that.s.display.getUTCMonth()-1 );
-							that._setTitle();
-							that._setCalander();
-
-							that.dom.input.focus();
-						}
-						else if ( parent.hasClass(classPrefix+'-iconRight') ) {
-							// Next month
-							that._correctMonth( that.s.display, that.s.display.getUTCMonth()+1 );
-							that._setTitle();
-							that._setCalander();
-
-							that.dom.input.focus();
-						}
-						else if ( button.parents('.'+classPrefix+'-time').length ) {
-							var val = button.data('value');
-							var unit = button.data('unit');
-
-							if ( unit === 'minutes' ) {
-								if ( parent.hasClass('disabled') && parent.hasClass('range') ) {
-									that.s.minutesRange = val;
-									that._setTime();
-									return;
-								}
-								else {
-									that.s.minutesRange = null;
-								}
-							}
-
-							if ( unit === 'seconds' ) {
-								if ( parent.hasClass('disabled') && parent.hasClass('range') ) {
-									that.s.secondsRange = val;
-									that._setTime();
-									return;
-								}
-								else {
-									that.s.secondsRange = null;
-								}
-							}
-
-							// Specific to hours for 12h clock
-							if ( val === 'am' ) {
-								if ( d.getUTCHours() >= 12 ) {
-									val = d.getUTCHours() - 12;
-								}
-								else {
-									return;
-								}
-							}
-							else if ( val === 'pm' ) {
-								if ( d.getUTCHours() < 12 ) {
-									val = d.getUTCHours() + 12;
-								}
-								else {
-									return;
-								}
-							}
-
-							var set = unit === 'hours' ?
-								'setUTCHours' :
-								unit === 'minutes' ?
-									'setUTCMinutes' :
-									'setSeconds';
-
-							d[set]( val );
-							that._setTime();
-							that._writeOutput( true );
-							onChange();
-						}
-						else {
-							// Calendar click
-							if ( ! d ) {
-								d = that._dateToUtc( new Date() );
-							}
-
-							// Can't be certain that the current day will exist in
-							// the new month, and likewise don't know that the
-							// new day will exist in the old month, But 1 always
-							// does, so we can change the month without worry of a
-							// recalculation being done automatically by `Date`
-							d.setUTCDate( 1 );
-							d.setUTCFullYear( button.data('year') );
-							d.setUTCMonth( button.data('month') );
-							d.setUTCDate( button.data('day') );
-
-							that._writeOutput( true );
-
-							// Don't hide if there is a time picker, since we want to
-							// be able to select a time as well.
-							if ( ! that.s.parts.time ) {
-								// This is annoying but IE has some kind of async
-								// behaviour with focus and the focus from the above
-								// write would occur after this hide - resulting in the
-								// calendar opening immediately
-								setTimeout( function () {
-									that._hide();
-								}, 10 );
-							}
-							else {
-								that._setCalander();
-							}
-
-							onChange();
-						}
-					}
-					else {
-						// Click anywhere else in the widget - return focus to the
-						// input element
-						that.dom.input.focus();
-					}
-				} );
-		},
-
-
-		/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-		 * Private
-		 */
-
-		/**
-		 * Compare the date part only of two dates - this is made super easy by the
-		 * toDateString method!
-		 *
-		 * @param  {Date} a Date 1
-		 * @param  {Date} b Date 2
-		 * @private
-		 */
-		_compareDates: function( a, b ) {
-			// Can't use toDateString as that converts to local time
-			return this._dateToUtcString(a) === this._dateToUtcString(b);
-		},
-
-		/**
-		 * When changing month, take account of the fact that some months don't have
-		 * the same number of days. For example going from January to February you
-		 * can have the 31st of Jan selected and just add a month since the date
-		 * would still be 31, and thus drop you into March.
-		 *
-		 * @param  {Date} date  Date - will be modified
-		 * @param  {integer} month Month to set
-		 * @private
-		 */
-		_correctMonth: function ( date, month ) {
-			var days = this._daysInMonth( date.getUTCFullYear(), month );
-			var correctDays = date.getUTCDate() > days;
-
-			date.setUTCMonth( month );
-
-			if ( correctDays ) {
-				date.setUTCDate( days );
-				date.setUTCMonth( month );
-			}
-		},
-
-		/**
-		 * Get the number of days in a method. Based on
-		 * http://stackoverflow.com/a/4881951 by Matti Virkkunen
-		 *
-		 * @param  {integer} year  Year
-		 * @param  {integer} month Month (starting at 0)
-		 * @private
-		 */
-		_daysInMonth: function ( year, month ) {
-			// 
-			var isLeap = ((year % 4) === 0 && ((year % 100) !== 0 || (year % 400) === 0));
-			var months = [31, (isLeap ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-			return months[month];
-		},
-
-		/**
-		 * Create a new date object which has the UTC values set to the local time.
-		 * This allows the local time to be used directly for the library which
-		 * always bases its calculations and display on UTC.
-		 *
-		 * @param  {Date} s Date to "convert"
-		 * @return {Date}   Shifted date
-		 */
-		_dateToUtc: function ( s ) {
-			return new Date( Date.UTC(
-				s.getFullYear(), s.getMonth(), s.getDate(),
-				s.getHours(), s.getMinutes(), s.getSeconds()
-			) );
-		},
-
-		/**
-		 * Create a UTC ISO8601 date part from a date object
-		 *
-		 * @param  {Date} d Date to "convert"
-		 * @return {string} ISO formatted date
-		 */
-		_dateToUtcString: function ( d ) {
-			return d.getUTCFullYear()+'-'+
-				this._pad(d.getUTCMonth()+1)+'-'+
-				this._pad(d.getUTCDate());
-		},
-
-		/**
-		 * Hide the control and remove events related to its display
-		 *
-		 * @private
-		 */
-		_hide: function (destroy) {
-			if (! destroy && this.dom.input.attr('type') === 'hidden') {
-				return;
-			}
-
-			var namespace = this.s.namespace;
-
-			this.dom.container.detach();
-
-			$(window).off( '.'+namespace );
-			$(document).off( 'keydown.'+namespace );
-			$('div.dataTables_scrollBody').off( 'scroll.'+namespace );
-			$('div.DTE_Body_Content').off( 'scroll.'+namespace );
-			$('body').off( 'click.'+namespace );
-		},
-
-		/**
-		 * Convert a 24 hour value to a 12 hour value
-		 *
-		 * @param  {integer} val 24 hour value
-		 * @return {integer}     12 hour value
-		 * @private
-		 */
-		_hours24To12: function ( val ) {
-			return val === 0 ?
-				12 :
-				val > 12 ?
-					val - 12 :
-					val;
-		},
-
-		/**
-		 * Generate the HTML for a single day in the calendar - this is basically
-		 * and HTML cell with a button that has data attributes so we know what was
-		 * clicked on (if it is clicked on) and a bunch of classes for styling.
-		 *
-		 * @param  {object} day Day object from the `_htmlMonth` method
-		 * @return {string}     HTML cell
-		 */
-		_htmlDay: function( day )
-		{
-			if ( day.empty ) {
-				return '<td class="empty"></td>';
-			}
-
-			var classes = [ 'selectable' ];
-			var classPrefix = this.c.classPrefix;
-
-			if ( day.disabled ) {
-				classes.push( 'disabled' );
-			}
-
-			if ( day.today ) {
-				classes.push( 'now' );
-			}
-
-			if ( day.selected ) {
-				classes.push( 'selected' );
-			}
-
-			return '<td data-day="' + day.day + '" class="' + classes.join(' ') + '">' +
-					'<button class="'+classPrefix+'-button '+classPrefix+'-day" type="button" ' +'data-year="' + day.year + '" data-month="' + day.month + '" data-day="' + day.day + '">' +
-						'<span>'+day.day+'</span>'+
-					'</button>' +
-				'</td>';
-		},
-
-
-		/**
-		 * Create the HTML for a month to be displayed in the calendar table.
-		 * 
-		 * Based upon the logic used in Pikaday - MIT licensed
-		 * Copyright (c) 2014 David Bushell
-		 * https://github.com/dbushell/Pikaday
-		 *
-		 * @param  {integer} year  Year
-		 * @param  {integer} month Month (starting at 0)
-		 * @return {string} Calendar month HTML
-		 * @private
-		 */
-		_htmlMonth: function ( year, month ) {
-			var now    = this._dateToUtc( new Date() ),
-				days   = this._daysInMonth( year, month ),
-				before = new Date( Date.UTC(year, month, 1) ).getUTCDay(),
-				data   = [],
-				row    = [];
-
-			if ( this.c.firstDay > 0 ) {
-				before -= this.c.firstDay;
-
-				if (before < 0) {
-					before += 7;
-				}
-			}
-
-			var cells = days + before,
-				after = cells;
-
-			while ( after > 7 ) {
-				after -= 7;
-			}
-
-			cells += 7 - after;
-
-			var minDate = this.c.minDate;
-			var maxDate = this.c.maxDate;
-
-			if ( minDate ) {
-				minDate.setUTCHours(0);
-				minDate.setUTCMinutes(0);
-				minDate.setSeconds(0);
-			}
-
-			if ( maxDate ) {
-				maxDate.setUTCHours(23);
-				maxDate.setUTCMinutes(59);
-				maxDate.setSeconds(59);
-			}
-
-			for ( var i=0, r=0 ; i<cells ; i++ ) {
-				var day      = new Date( Date.UTC(year, month, 1 + (i - before)) ),
-					selected = this.s.d ? this._compareDates(day, this.s.d) : false,
-					today    = this._compareDates(day, now),
-					empty    = i < before || i >= (days + before),
-					disabled = (minDate && day < minDate) ||
-					           (maxDate && day > maxDate);
-
-				var disableDays = this.c.disableDays;
-				if ( Array.isArray( disableDays ) && $.inArray( day.getUTCDay(), disableDays ) !== -1 ) {
-					disabled = true;
-				}
-				else if ( typeof disableDays === 'function' && disableDays( day ) === true ) {
-					disabled = true;
-				}
-
-				var dayConfig = {
-					day:      1 + (i - before),
-					month:    month,
-					year:     year,
-					selected: selected,
-					today:    today,
-					disabled: disabled,
-					empty:    empty
-				};
-
-				row.push( this._htmlDay(dayConfig) );
-
-				if ( ++r === 7 ) {
-					if ( this.c.showWeekNumber ) {
-						row.unshift( this._htmlWeekOfYear(i - before, month, year) );
-					}
-
-					data.push( '<tr>'+row.join('')+'</tr>' );
-					row = [];
-					r = 0;
-				}
-			}
-
-			var classPrefix = this.c.classPrefix;
-			var className = classPrefix+'-table';
-			if ( this.c.showWeekNumber ) {
-				className += ' weekNumber';
-			}
-
-			// Show / hide month icons based on min/max
-			if ( minDate ) {
-				var underMin = minDate >= new Date( Date.UTC(year, month, 1, 0, 0, 0 ) );
-
-				this.dom.title.find('div.'+classPrefix+'-iconLeft')
-					.css( 'display', underMin ? 'none' : 'block' );
-			}
-
-			if ( maxDate ) {
-				var overMax = maxDate < new Date( Date.UTC(year, month+1, 1, 0, 0, 0 ) );
-
-				this.dom.title.find('div.'+classPrefix+'-iconRight')
-					.css( 'display', overMax ? 'none' : 'block' );
-			}
-
-			return '<table class="'+className+'">' +
-					'<thead>'+
-						this._htmlMonthHead() +
-					'</thead>'+
-					'<tbody>'+
-						data.join('') +
-					'</tbody>'+
-				'</table>';
-		},
-
-		/**
-		 * Create the calendar table's header (week days)
-		 *
-		 * @return {string} HTML cells for the row
-		 * @private
-		 */
-		_htmlMonthHead: function () {
-			var a = [];
-			var firstDay = this.c.firstDay;
-			var i18n = this.c.i18n;
-
-			// Take account of the first day shift
-			var dayName = function ( day ) {
-				day += firstDay;
-
-				while (day >= 7) {
-					day -= 7;
-				}
-
-				return i18n.weekdays[day];
-			};
-			
-			// Empty cell in the header
-			if ( this.c.showWeekNumber ) {
-				a.push( '<th></th>' );
-			}
-
-			for ( var i=0 ; i<7 ; i++ ) {
-				a.push( '<th>'+dayName( i )+'</th>' );
-			}
-
-			return a.join('');
-		},
-
-		/**
-		 * Create a cell that contains week of the year - ISO8601
-		 *
-		 * Based on https://stackoverflow.com/questions/6117814/ and
-		 * http://techblog.procurios.nl/k/n618/news/view/33796/14863/
-		 *
-		 * @param  {integer} d Day of month
-		 * @param  {integer} m Month of year (zero index)
-		 * @param  {integer} y Year
-		 * @return {string}   
-		 * @private
-		 */
-		_htmlWeekOfYear: function ( d, m, y ) {
-			var date = new Date( y, m, d, 0, 0, 0, 0 );
-
-			// First week of the year always has 4th January in it
-			date.setDate( date.getDate() + 4 - (date.getDay() || 7) );
-
-			var oneJan = new Date( y, 0, 1 );
-			var weekNum = Math.ceil( ( ( (date - oneJan) / 86400000) + 1)/7 );
-
-			return '<td class="'+this.c.classPrefix+'-week">' + weekNum + '</td>';
-		},
-
-		/**
-		 * Create option elements from a range in an array
-		 *
-		 * @param  {string} selector Class name unique to the select element to use
-		 * @param  {array} values   Array of values
-		 * @param  {array} [labels] Array of labels. If given must be the same
-		 *   length as the values parameter.
-		 * @private
-		 */
-		_options: function ( selector, values, labels ) {
-			if ( ! labels ) {
-				labels = values;
-			}
-
-			var select = this.dom.container.find('select.'+this.c.classPrefix+'-'+selector);
-			select.empty();
-
-			for ( var i=0, ien=values.length ; i<ien ; i++ ) {
-				select.append( '<option value="'+values[i]+'">'+labels[i]+'</option>' );
-			}
-		},
-
-		/**
-		 * Set an option and update the option's span pair (since the select element
-		 * has opacity 0 for styling)
-		 *
-		 * @param  {string} selector Class name unique to the select element to use
-		 * @param  {*}      val      Value to set
-		 * @private
-		 */
-		_optionSet: function ( selector, val ) {
-			var select = this.dom.container.find('select.'+this.c.classPrefix+'-'+selector);
-			var span = select.parent().children('span');
-
-			select.val( val );
-
-			var selected = select.find('option:selected');
-			span.html( selected.length !== 0 ?
-				selected.text() :
-				this.c.i18n.unknown
-			);
-		},
-
-		/**
-		 * Create time options list.
-		 *
-		 * @param  {string} unit Time unit - hours, minutes or seconds
-		 * @param  {integer} count Count range - 12, 24 or 60
-		 * @param  {integer} val Existing value for this unit
-		 * @param  {integer[]} allowed Values allow for selection
-		 * @param  {integer} range Override range
-		 * @private
-		 */
-		_optionsTime: function ( unit, count, val, allowed, range ) {
-			var classPrefix = this.c.classPrefix;
-			var container = this.dom.container.find('div.'+classPrefix+'-'+unit);
-			var i, j;
-			var render = count === 12 ?
-				function (i) { return i; } :
-				this._pad;
-			var classPrefix = this.c.classPrefix;
-			var className = classPrefix+'-table';
-			var i18n = this.c.i18n;
-
-			if ( ! container.length ) {
-				return;
-			}
-
-			var a = '';
-			var span = 10;
-			var button = function (value, label, className) {
-				// Shift the value for PM
-				if ( count === 12 && typeof value === 'number' ) {
-					if (val >= 12 ) {
-						value += 12;
-					}
-
-					if (value == 12) {
-						value = 0;
-					}
-					else if (value == 24) {
-						value = 12;
-					}
-				}
-
-				var selected = val === value || (value === 'am' && val < 12) || (value === 'pm' && val >= 12) ?
-					'selected' :
-					'';
-				
-				if (allowed && $.inArray(value, allowed) === -1) {
-					selected += ' disabled';
-				}
-
-				if ( className ) {
-					selected += ' '+className;
-				}
-
-				return '<td class="selectable '+selected+'">' +
-					'<button class="'+classPrefix+'-button '+classPrefix+'-day" type="button" data-unit="'+unit+'" data-value="'+value+ '">' +
-						'<span>'+label+'</span>'+
-					'</button>' +
-				'</td>';
-			};
-
-			if ( count === 12 ) {
-				// Hours with AM/PM
-				a += '<tr>';
-				
-				for ( i=1 ; i<=6 ; i++ ) {
-					a += button(i, render(i));
-				}
-				a += button('am', i18n.amPm[0]);
-
-				a += '</tr>';
-				a += '<tr>';
-
-				for ( i=7 ; i<=12 ; i++ ) {
-					a += button(i, render(i));
-				}
-				a += button('pm', i18n.amPm[1]);
-				a += '</tr>';
-
-				span = 7;
-			}
-			else if ( count === 24 ) {
-				// Hours - 24
-				var c = 0;
-				for (j=0 ; j<4 ; j++ ) {
-					a += '<tr>';
-					for ( i=0 ; i<6 ; i++ ) {
-						a += button(c, render(c));
-						c++;
-					}
-					a += '</tr>';
-				}
-
-				span = 6;
-			}
-			else {
-				// Minutes and seconds
-				a += '<tr>';
-				for (j=0 ; j<60 ; j+=10 ) {
-					a += button(j, render(j), 'range');
-				}
-				a += '</tr>';
-				
-				// Slight hack to allow for the different number of columns
-				a += '</tbody></thead><table class="'+className+' '+className+'-nospace"><tbody>';
-
-				var start = range !== null ?
-					range :
-					Math.floor( val / 10 )*10;
-
-				a += '<tr>';
-				for (j=start+1 ; j<start+10 ; j++ ) {
-					a += button(j, render(j));
-				}
-				a += '</tr>';
-
-				span = 6;
-			}
-
-			container
-				.empty()
-				.append(
-					'<table class="'+className+'">'+
-						'<thead><tr><th colspan="'+span+'">'+
-							i18n[unit] +
-						'</th></tr></thead>'+
-						'<tbody>'+
-							a+
-						'</tbody>'+
-					'</table>'
-				);
-		},
-
-		/**
-		 * Create the options for the month and year
-		 *
-		 * @param  {integer} year  Year
-		 * @param  {integer} month Month (starting at 0)
-		 * @private
-		 */
-		_optionsTitle: function () {
-			var i18n = this.c.i18n;
-			var min = this.c.minDate;
-			var max = this.c.maxDate;
-			var minYear = min ? min.getFullYear() : null;
-			var maxYear = max ? max.getFullYear() : null;
-
-			var i = minYear !== null ? minYear : new Date().getFullYear() - this.c.yearRange;
-			var j = maxYear !== null ? maxYear : new Date().getFullYear() + this.c.yearRange;
-
-			this._options( 'month', this._range( 0, 11 ), i18n.months );
-			this._options( 'year', this._range( i, j ) );
-		},
-
-		/**
-		 * Simple two digit pad
-		 *
-		 * @param  {integer} i      Value that might need padding
-		 * @return {string|integer} Padded value
-		 * @private
-		 */
-		_pad: function ( i ) {
-			return i<10 ? '0'+i : i;
-		},
-
-		/**
-		 * Position the calendar to look attached to the input element
-		 * @private
-		 */
-		_position: function () {
-			var offset = this.c.attachTo === 'input' ? this.dom.input.position() : this.dom.input.offset();
-			var container = this.dom.container;
-			var inputHeight = this.dom.input.outerHeight();
-
-			if (container.hasClass('inline')) {
-				container.insertAfter( this.dom.input );
-				return;
-			}
-
-			if ( this.s.parts.date && this.s.parts.time && $(window).width() > 550 ) {
-				container.addClass('horizontal');
-			}
-			else {
-				container.removeClass('horizontal');
-			}
-
-			if(this.c.attachTo === 'input') {
-				container
-					.css( {
-						top: offset.top + inputHeight,
-						left: offset.left
-					} )
-					.insertAfter( this.dom.input );
-			}
-			else {
-				container
-					.css( {
-						top: offset.top + inputHeight,
-						left: offset.left
-					} )
-					.appendTo( 'body' );
-			}
-
-			var calHeight = container.outerHeight();
-			var calWidth = container.outerWidth();
-			var scrollTop = $(window).scrollTop();
-
-			// Correct to the bottom
-			if ( offset.top + inputHeight + calHeight - scrollTop > $(window).height() ) {
-				var newTop = offset.top - calHeight;
-
-				container.css( 'top', newTop < 0 ? 0 : newTop );
-			}
-
-			// Correct to the right
-			if ( calWidth + offset.left > $(window).width() ) {
-				var newLeft = $(window).width() - calWidth;
-
-				// Account for elements which are inside a position absolute element
-				if (this.c.attachTo === 'input') {
-					newLeft -= $(container).offsetParent().offset().left;
-				}
-
-				container.css( 'left', newLeft < 0 ? 0 : newLeft );
-			}
-		},
-
-		/**
-		 * Create a simple array with a range of values
-		 *
-		 * @param  {integer} start   Start value (inclusive)
-		 * @param  {integer} end     End value (inclusive)
-		 * @param  {integer} [inc=1] Increment value
-		 * @return {array}           Created array
-		 * @private
-		 */
-		_range: function ( start, end, inc ) {
-			var a = [];
-
-			if ( ! inc ) {
-				inc = 1;
-			}
-
-			for ( var i=start ; i<=end ; i+=inc ) {
-				a.push( i );
-			}
-
-			return a;
-		},
-
-		/**
-		 * Redraw the calendar based on the display date - this is a destructive
-		 * operation
-		 *
-		 * @private
-		 */
-		_setCalander: function () {
-			if ( this.s.display ) {
-				this.dom.calendar
-					.empty()
-					.append( this._htmlMonth(
-						this.s.display.getUTCFullYear(),
-						this.s.display.getUTCMonth()
-					) );
-			}
-		},
-
-		/**
-		 * Set the month and year for the calendar based on the current display date
-		 *
-		 * @private
-		 */
-		_setTitle: function () {
-			this._optionSet( 'month', this.s.display.getUTCMonth() );
-			this._optionSet( 'year', this.s.display.getUTCFullYear() );
-		},
-
-		/**
-		 * Set the time based on the current value of the widget
-		 *
-		 * @private
-		 */
-		_setTime: function () {
-			var that = this;
-			var d = this.s.d;
-			var hours = d ? d.getUTCHours() : 0;
-			var allowed = function ( prop ) { // Backwards compt with `Increment` option
-				return that.c[prop+'Available'] ?
-					that.c[prop+'Available'] :
-					that._range( 0, 59, that.c[prop+'Increment'] );
-			};
-
-			this._optionsTime( 'hours', this.s.parts.hours12 ? 12 : 24, hours, this.c.hoursAvailable );
-			this._optionsTime( 'minutes', 60, d ? d.getUTCMinutes() : 0, allowed('minutes'), this.s.minutesRange );
-			this._optionsTime( 'seconds', 60, d ? d.getSeconds() : 0, allowed('seconds'), this.s.secondsRange );
-		},
-
-		/**
-		 * Show the widget and add events to the document required only while it
-		 * is displayed
-		 * 
-		 * @private
-		 */
-		_show: function () {
-			var that = this;
-			var namespace = this.s.namespace;
-
-			this._position();
-
-			// Need to reposition on scroll
-			$(window).on( 'scroll.'+namespace+' resize.'+namespace, function () {
-				that._hide();
-			} );
-
-			$('div.DTE_Body_Content').on( 'scroll.'+namespace, function () {
-				that._hide();
-			} );
-
-			$('div.dataTables_scrollBody').on( 'scroll.'+namespace, function () {
-				that._hide();
-			} );
-
-			var offsetParent = this.dom.input[0].offsetParent;
-
-			if ( offsetParent !== document.body ) {
-				$(offsetParent).on( 'scroll.'+namespace, function () {
-					that._hide();
-				} );
-			}
-
-			// On tab focus will move to a different field (no keyboard navigation
-			// in the date picker - this might need to be changed).
-			$(document).on( 'keydown.'+namespace, function (e) {
-				if (
-					e.keyCode === 9  || // tab
-					e.keyCode === 27 || // esc
-					e.keyCode === 13    // return
-				) {
-					that._hide();
-				}
-			} );
-
-			// Hide if clicking outside of the widget - but in a different click
-			// event from the one that was used to trigger the show (bubble and
-			// inline)
-			setTimeout( function () {
-				$('body').on( 'click.'+namespace, function (e) {
-					var parents = $(e.target).parents();
-
-					if ( ! parents.filter( that.dom.container ).length && e.target !== that.dom.input[0] ) {
-						that._hide();
-					}
-				} );
-			}, 10 );
-		},
-
-		/**
-		 * Write the formatted string to the input element this control is attached
-		 * to
-		 *
-		 * @private
-		 */
-		_writeOutput: function ( focus ) {
-			var date = this.s.d;
-
-			// Use moment or dayjs if possible - otherwise it must be ISO8601 (or the
-			// constructor would have thrown an error)
-			var out = dateLib ?
-				dateLib.utc( date, undefined$1, this.c.locale, this.c.strict ).format( this.c.format ) :
-				date.getUTCFullYear() +'-'+
-					this._pad(date.getUTCMonth() + 1) +'-'+
-					this._pad(date.getUTCDate());
-
-				this.dom.input
-					.val( out )
-					.trigger('change', {write: date});
-			
-			if ( this.dom.input.attr('type') === 'hidden' ) {
-				this.val(out, false);
-			}
-
-			if ( focus ) {
-				this.dom.input.focus();
-			}
-		}
-	} );
-
-	/**
-	 * Use a specificmoment compatible date library
-	 */
-	DateTime.use = function (lib) {
-		dateLib = lib;
-	};
-
-	/**
-	 * For generating unique namespaces
-	 *
-	 * @type {Number}
-	 * @private
-	 */
-	DateTime._instance = 0;
-
-	/**
-	 * Defaults for the date time picker
-	 *
-	 * @type {Object}
-	 */
-	DateTime.defaults = {
-		attachTo: 'body',
-
-		// Not documented - could be an internal property
-		classPrefix: 'dt-datetime',
-
-		// function or array of ints
-		disableDays: null,
-
-		// first day of the week (0: Sunday, 1: Monday, etc)
-		firstDay: 1,
-
-		format: 'YYYY-MM-DD',
-
-		hoursAvailable: null,
-
-		i18n: {
-			previous: 'Previous',
-			next:     'Next',
-			months:   [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ],
-			weekdays: [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ],
-			amPm:     [ 'am', 'pm' ],
-			hours:    'Hour',
-			minutes:  'Minute',
-			seconds:  'Second',
-			unknown:  '-'
-		},
-
-		maxDate: null,
-
-		minDate: null,
-
-		minutesAvailable: null,
-
-		minutesIncrement: 1, // deprecated
-
-		strict: true,
-
-		locale: 'en',
-
-		onChange: function () {},
-
-		secondsAvailable: null,
-
-		secondsIncrement: 1, // deprecated
-
-		// show the ISO week number at the head of the row
-		showWeekNumber: false,
-
-		// overruled by max / min date
-		yearRange: 25
-	};
-
-	DateTime.version = '1.0.1';
-
-	// Global export - if no conflicts
-	if (! window.DateTime) {
-		window.DateTime = DateTime;
-	}
-
-	// Make available via jQuery
-	$.fn.dtDateTime = function (options) {
-		return this.each(function() {
-			new DateTime(this, options);
-		});
-	};
-
-	// Attach to DataTables if present
-	if ($.fn.dataTable) {
-		$.fn.dataTable.DateTime = DateTime;
-		$.fn.DataTable.DateTime = DateTime;
-	}
-
-	return DateTime;
-
-	}));
-
-	var $;
-	var DataTable;
-	var moment = window.moment;
-	/**
-	 * Sets the value of jQuery for use in the file
-	 * @param jq the instance of jQuery to be set
-	 */
-	function setJQuery(jq) {
-	    $ = jq;
-	    DataTable = jq.fn.dataTable;
-	}
-	/**
-	 * The Criteria class is used within SearchBuilder to represent a search criteria
-	 */
-	var Criteria = /** @class */ (function () {
-	    function Criteria(table, opts, topGroup, index, depth) {
-	        var _this = this;
-	        if (index === void 0) { index = 0; }
-	        if (depth === void 0) { depth = 1; }
-	        // Check that the required version of DataTables is included
-	        if (!DataTable || !DataTable.versionCheck || !DataTable.versionCheck('1.10.0')) {
-	            throw new Error('SearchPane requires DataTables 1.10 or newer');
-	        }
-	        this.classes = $.extend(true, {}, Criteria.classes);
-	        // Get options from user and any extra conditions/column types defined by plug-ins
-	        this.c = $.extend(true, {}, Criteria.defaults, $.fn.dataTable.ext.searchBuilder, opts);
-	        var i18n = this.c.i18n;
-	        this.s = {
-	            condition: undefined,
-	            conditions: {},
-	            data: undefined,
-	            dataIdx: -1,
-	            dataPoints: [],
-	            depth: depth,
-	            dt: table,
-	            filled: false,
-	            index: index,
-	            momentFormat: false,
-	            topGroup: topGroup,
-	            type: '',
-	            value: []
-	        };
-	        this.dom = {
-	            buttons: $('<div/>')
-	                .addClass(this.classes.buttonContainer),
-	            condition: $('<select disabled/>')
-	                .addClass(this.classes.condition)
-	                .addClass(this.classes.dropDown)
-	                .addClass(this.classes.italic)
-	                .attr('autocomplete', 'hacking'),
-	            conditionTitle: $('<option value="" disabled selected hidden/>')
-	                .text(this.s.dt.i18n('searchBuilder.condition', i18n.condition)),
-	            container: $('<div/>')
-	                .addClass(this.classes.container),
-	            data: $('<select/>')
-	                .addClass(this.classes.data)
-	                .addClass(this.classes.dropDown)
-	                .addClass(this.classes.italic),
-	            dataTitle: $('<option value="" disabled selected hidden/>')
-	                .text(this.s.dt.i18n('searchBuilder.data', i18n.data)),
-	            defaultValue: $('<select disabled/>')
-	                .addClass(this.classes.value)
-	                .addClass(this.classes.dropDown),
-	            "delete": $('<button>&times</button>')
-	                .addClass(this.classes["delete"])
-	                .addClass(this.classes.button)
-	                .attr('title', this.s.dt.i18n('searchBuilder.deleteTitle', i18n.deleteTitle))
-	                .attr('type', 'button'),
-	            left: $('<button>\<</button>')
-	                .addClass(this.classes.left)
-	                .addClass(this.classes.button)
-	                .attr('title', this.s.dt.i18n('searchBuilder.leftTitle', i18n.leftTitle))
-	                .attr('type', 'button'),
-	            right: $('<button>\></button>')
-	                .addClass(this.classes.right)
-	                .addClass(this.classes.button)
-	                .attr('title', this.s.dt.i18n('searchBuilder.rightTitle', i18n.rightTitle))
-	                .attr('type', 'button'),
-	            value: [
-	                $('<select disabled/>').addClass(this.classes.value).addClass(this.classes.dropDown).addClass(this.classes.italic)
-	            ],
-	            valueTitle: $('<option value="--valueTitle--" selected/>').text(this.s.dt.i18n('searchBuilder.value', i18n.value))
-	        };
-	        // If the greyscale option is selected then add the class to add the grey colour to SearchBuilder
-	        if (this.c.greyscale) {
-	            $(this.dom.data).addClass(this.classes.greyscale);
-	            $(this.dom.condition).addClass(this.classes.greyscale);
-	            $(this.dom.defaultValue).addClass(this.classes.greyscale);
-	            for (var _i = 0, _a = this.dom.value; _i < _a.length; _i++) {
-	                var val = _a[_i];
-	                $(val).addClass(this.classes.greyscale);
-	            }
-	        }
-	        // For responsive design, adjust the criterias properties on the following events
-	        this.s.dt.on('draw.dtsp', function () {
-	            _this._adjustCriteria();
-	        });
-	        this.s.dt.on('buttons-action', function () {
-	            _this._adjustCriteria();
-	        });
-	        $(window).on('resize.dtsp', DataTable.util.throttle(function () {
-	            _this._adjustCriteria();
-	        }));
-	        this._buildCriteria();
-	        return this;
-	    }
-	    /**
-	     * Adds the left button to the criteria
-	     */
-	    Criteria.prototype.updateArrows = function (hasSiblings, redraw) {
-	        if (hasSiblings === void 0) { hasSiblings = false; }
-	        if (redraw === void 0) { redraw = true; }
-	        // Empty the container and append all of the elements in the correct order
-	        $(this.dom.container)
-	            .empty()
-	            .append(this.dom.data)
-	            .append(this.dom.condition)
-	            .append(this.dom.value[0]);
-	        // Trigger the inserted events for the value elements as they are inserted
-	        $(this.dom.value[0]).trigger('dtsb-inserted');
-	        for (var i = 1; i < this.dom.value.length; i++) {
-	            $(this.dom.container).append(this.dom.value[i]);
-	            $(this.dom.value[i]).trigger('dtsb-inserted');
-	        }
-	        // If this is a top level criteria then don't let it move left
-	        if (this.s.depth > 1) {
-	            $(this.dom.buttons).append(this.dom.left);
-	        }
-	        // If the depthLimit of the query has been hit then don't add the right button
-	        if ((this.c.depthLimit === false || this.s.depth < this.c.depthLimit) && hasSiblings) {
-	            $(this.dom.buttons).append(this.dom.right);
-	        }
-	        else {
-	            $(this.dom.right).remove();
-	        }
-	        $(this.dom.buttons).append(this.dom["delete"]);
-	        $(this.dom.container).append(this.dom.buttons);
-	        if (redraw) {
-	            // A different combination of arrows and selectors may lead to a need for responsive to be triggered
-	            this._adjustCriteria();
-	        }
-	    };
-	    /**
-	     * Destroys the criteria, removing listeners and container from the dom
-	     */
-	    Criteria.prototype.destroy = function () {
-	        // Turn off listeners
-	        $(this.dom.data).off('.dtsb');
-	        $(this.dom.condition).off('.dtsb');
-	        $(this.dom["delete"]).off('.dtsb');
-	        for (var _i = 0, _a = this.dom.value; _i < _a.length; _i++) {
-	            var val = _a[_i];
-	            $(val).off('.dtsb');
-	        }
-	        // Remove container from the dom
-	        $(this.dom.container).remove();
-	    };
-	    /**
-	     * Passes in the data for the row and compares it against this single criteria
-	     * @param rowData The data for the row to be compared
-	     * @returns boolean Whether the criteria has passed
-	     */
-	    Criteria.prototype.search = function (rowData, rowIdx) {
-	        var condition = this.s.conditions[this.s.condition];
-	        if (this.s.condition !== undefined && condition !== undefined) {
-	            // This check is in place for if a custom decimal character is in place
-	            if (this.s.type.indexOf('num') !== -1 && this.s.dt.settings()[0].oLanguage.sDecimal !== '') {
-	                rowData[this.s.dataIdx] = rowData[this.s.dataIdx].replace(this.s.dt.settings()[0].oLanguage.sDecimal, '.');
-	            }
-	            var filter = rowData[this.s.dataIdx];
-	            // If orthogonal data is in place we need to get it's values for searching
-	            if (this.c.orthogonal.search !== 'search') {
-	                var settings = this.s.dt.settings()[0];
-	                filter = settings.oApi._fnGetCellData(settings, rowIdx, this.s.dataIdx, typeof this.c.orthogonal === 'string' ?
-	                    this.c.orthogonal :
-	                    this.c.orthogonal.search);
-	            }
-	            if (this.s.type === 'array') {
-	                // Make sure we are working with an array
-	                if (!Array.isArray(filter)) {
-	                    filter = [filter];
-	                }
-	                filter.sort();
-	            }
-	            return condition.search(filter, this.s.value, this);
-	        }
-	    };
-	    /**
-	     * Gets the details required to rebuild the criteria
-	     */
-	    Criteria.prototype.getDetails = function () {
-	        var value = this.s.value;
-	        // This check is in place for if a custom decimal character is in place
-	        if (this.s.type.indexOf('num') !== -1 && this.s.dt.settings()[0].oLanguage.sDecimal !== '') {
-	            for (var i = 0; i < this.s.value.length; i++) {
-	                if (this.s.value[i].indexOf('.') !== -1) {
-	                    value[i] = this.s.value[i].replace('.', this.s.dt.settings()[0].oLanguage.sDecimal);
-	                }
-	            }
-	        }
-	        return {
-	            condition: this.s.condition,
-	            data: this.s.data,
-	            value: value
-	        };
-	    };
-	    /**
-	     * Getter for the node for the container of the criteria
-	     * @returns JQuery<HTMLElement> the node for the container
-	     */
-	    Criteria.prototype.getNode = function () {
-	        return this.dom.container;
-	    };
-	    /**
-	     * Populates the criteria data, condition and value(s) as far as has been selected
-	     */
-	    Criteria.prototype.populate = function () {
-	        this._populateData();
-	        // If the column index has been found attempt to select a condition
-	        if (this.s.dataIdx !== -1) {
-	            this._populateCondition();
-	            // If the condittion has been found attempt to select the values
-	            if (this.s.condition !== undefined) {
-	                this._populateValue();
-	            }
-	        }
-	    };
-	    /**
-	     * Rebuilds the criteria based upon the details passed in
-	     * @param loadedCriteria the details required to rebuild the criteria
-	     */
-	    Criteria.prototype.rebuild = function (loadedCriteria) {
-	        // Check to see if the previously selected data exists, if so select it
-	        var foundData = false;
-	        var dataIdx;
-	        this._populateData();
-	        // If a data selection has previously been made attempt to find and select it
-	        if (loadedCriteria.data !== undefined) {
-	            var italic_1 = this.classes.italic;
-	            var data_1 = this.dom.data;
-	            $(this.dom.data).children('option').each(function () {
-	                if ($(this).text() === loadedCriteria.data) {
-	                    $(this).attr('selected', true);
-	                    $(data_1).removeClass(italic_1);
-	                    foundData = true;
-	                    dataIdx = $(this).val();
-	                }
-	            });
-	        }
-	        // If the data has been found and selected then the condition can be populated and searched
-	        if (foundData) {
-	            this.s.data = loadedCriteria.data;
-	            this.s.dataIdx = dataIdx;
-	            $(this.dom.dataTitle).remove();
-	            this._populateCondition();
-	            $(this.dom.conditionTitle).remove();
-	            var condition_1;
-	            // Check to see if the previously selected condition exists, if so select it
-	            $(this.dom.condition).children('option').each(function () {
-	                if ((loadedCriteria.condition !== undefined &&
-	                    $(this).val() === loadedCriteria.condition &&
-	                    typeof loadedCriteria.condition === 'string')) {
-	                    $(this).attr('selected', true);
-	                    condition_1 = $(this).val();
-	                }
-	            });
-	            this.s.condition = condition_1;
-	            // If the condition has been found and selected then the value can be populated and searched
-	            if (this.s.condition !== undefined) {
-	                $(this.dom.conditionTitle).remove();
-	                $(this.dom.condition).removeClass(this.classes.italic);
-	                this._populateValue(loadedCriteria);
-	            }
-	            else {
-	                $(this.dom.conditionTitle).prependTo(this.dom.condition).attr('selected', true);
-	            }
-	        }
-	    };
-	    /**
-	     * Sets the listeners for the criteria
-	     */
-	    Criteria.prototype.setListeners = function () {
-	        var _this = this;
-	        $(this.dom.data)
-	            .unbind('input change')
-	            .on('input change', function () {
-	            $(_this.dom.dataTitle).attr('selected', false);
-	            $(_this.dom.data).removeClass(_this.classes.italic);
-	            _this.s.dataIdx = $(_this.dom.data).children('option:selected').val();
-	            _this.s.data = $(_this.dom.data).children('option:selected').text();
-	            _this.c.orthogonal = _this._getOptions().orthogonal;
-	            // When the data is changed, the values in condition and value may also change so need to renew them
-	            _this._clearCondition();
-	            _this._clearValue();
-	            _this._populateCondition();
-	            // If this criteria was previously active in the search then remove it from the search and trigger a new search
-	            if (_this.s.filled) {
-	                _this.s.filled = false;
-	                _this.s.dt.draw();
-	                _this.setListeners();
-	            }
-	            _this.s.dt.state.save();
-	        });
-	        $(this.dom.condition)
-	            .unbind('input change')
-	            .on('input change', function () {
-	            $(_this.dom.conditionTitle).attr('selected', false);
-	            $(_this.dom.condition).removeClass(_this.classes.italic);
-	            var condDisp = $(_this.dom.condition).children('option:selected').val();
-	            // Find the condition that has been selected and store it internally
-	            for (var _i = 0, _a = Object.keys(_this.s.conditions); _i < _a.length; _i++) {
-	                var cond = _a[_i];
-	                if (cond === condDisp) {
-	                    _this.s.condition = condDisp;
-	                    break;
-	                }
-	            }
-	            // When the condition is changed, the value selector may switch between a select element and an input element
-	            _this._clearValue();
-	            _this._populateValue();
-	            for (var _b = 0, _c = _this.dom.value; _b < _c.length; _b++) {
-	                var val = _c[_b];
-	                // If this criteria was previously active in the search then remove it from the search and trigger a new search
-	                if (_this.s.filled && $(_this.dom.container).has(val).length !== 0) {
-	                    _this.s.filled = false;
-	                    _this.s.dt.draw();
-	                    _this.setListeners();
-	                }
-	            }
-	            _this.s.dt.draw();
-	        });
-	    };
-	    /**
-	     * Adjusts the criteria to make SearchBuilder responsive
-	     */
-	    Criteria.prototype._adjustCriteria = function () {
-	        // If this criteria is not present then don't bother adjusting it
-	        if ($(document).has(this.dom.container).length === 0) {
-	            return;
-	        }
-	        var valRight;
-	        var valWidth;
-	        var outmostval = this.dom.value[this.dom.value.length - 1];
-	        // Calculate the width and right value of the outmost value element
-	        if ($(this.dom.container).has(outmostval).length !== 0) {
-	            valWidth = $(outmostval).outerWidth(true);
-	            valRight = $(outmostval).offset().left + valWidth;
-	        }
-	        else {
-	            return;
-	        }
-	        var leftOffset = $(this.dom.left).offset();
-	        var rightOffset = $(this.dom.right).offset();
-	        var clearOffset = $(this.dom["delete"]).offset();
-	        var hasLeft = $(this.dom.container).has(this.dom.left).length !== 0;
-	        var hasRight = $(this.dom.container).has(this.dom.right).length !== 0;
-	        var buttonsLeft = hasLeft ?
-	            leftOffset.left :
-	            hasRight ?
-	                rightOffset.left :
-	                clearOffset.left;
-	        // Perform the responsive calculations and redraw where necessary
-	        if (buttonsLeft - valRight < 15 ||
-	            (hasLeft && leftOffset.top !== clearOffset.top) ||
-	            (hasRight && rightOffset.top !== clearOffset.top)) {
-	            $(this.dom.container).parent().addClass(this.classes.vertical);
-	            $(this.s.topGroup).trigger('dtsb-redrawContents');
-	        }
-	        else if (buttonsLeft -
-	            ($(this.dom.data).offset().left +
-	                $(this.dom.data).outerWidth(true) +
-	                $(this.dom.condition).outerWidth(true) +
-	                valWidth) > 15) {
-	            $(this.dom.container).parent().removeClass(this.classes.vertical);
-	            $(this.s.topGroup).trigger('dtsb-redrawContents');
-	        }
-	    };
-	    /**
-	     * Builds the elements of the dom together
-	     */
-	    Criteria.prototype._buildCriteria = function () {
-	        // Append Titles for select elements
-	        $(this.dom.data).append(this.dom.dataTitle);
-	        $(this.dom.condition).append(this.dom.conditionTitle);
-	        // Add elements to container
-	        $(this.dom.container)
-	            .append(this.dom.data)
-	            .append(this.dom.condition);
-	        for (var _i = 0, _a = this.dom.value; _i < _a.length; _i++) {
-	            var val = _a[_i];
-	            $(val).append(this.dom.valueTitle);
-	            $(this.dom.container).append(val);
-	        }
-	        // Add buttons to container
-	        $(this.dom.container)
-	            .append(this.dom["delete"])
-	            .append(this.dom.right);
-	        this.setListeners();
-	    };
-	    /**
-	     * Clears the condition select element
-	     */
-	    Criteria.prototype._clearCondition = function () {
-	        $(this.dom.condition).empty();
-	        $(this.dom.conditionTitle).attr('selected', true).attr('disabled', true);
-	        $(this.dom.condition).prepend(this.dom.conditionTitle).prop('selectedIndex', 0);
-	        this.s.conditions = {};
-	        this.s.condition = undefined;
-	    };
-	    /**
-	     * Clears the value elements
-	     */
-	    Criteria.prototype._clearValue = function () {
-	        if (this.s.condition !== undefined) {
-	            // Remove all of the value elements
-	            for (var _i = 0, _a = this.dom.value; _i < _a.length; _i++) {
-	                var val = _a[_i];
-	                $(val).remove();
-	            }
-	            // Call the init function to get the value elements for this condition
-	            this.dom.value = [].concat(this.s.conditions[this.s.condition].init(this, Criteria.updateListener));
-	            $(this.dom.value[0]).insertAfter(this.dom.condition).trigger('dtsb-inserted');
-	            // Insert all of the value elements
-	            for (var i = 1; i < this.dom.value.length; i++) {
-	                $(this.dom.value[i]).insertAfter(this.dom.value[i - 1]).trigger('dtsb-inserted');
-	            }
-	        }
-	        else {
-	            // Remove all of the value elements
-	            for (var _b = 0, _c = this.dom.value; _b < _c.length; _b++) {
-	                var val = _c[_b];
-	                $(val).remove();
-	            }
-	            // Append the default valueTitle to the default select element
-	            $(this.dom.valueTitle)
-	                .attr('selected', true);
-	            $(this.dom.defaultValue)
-	                .append(this.dom.valueTitle)
-	                .insertAfter(this.dom.condition);
-	        }
-	        this.s.value = [];
-	    };
-	    /**
-	     * Gets the options for the column
-	     * @returns {object} The options for the column
-	     */
-	    Criteria.prototype._getOptions = function () {
-	        var table = this.s.dt;
-	        return $.extend(true, {}, Criteria.defaults, table.settings()[0].aoColumns[this.s.dataIdx].searchBuilder);
-	    };
-	    /**
-	     * Populates the condition dropdown
-	     */
-	    Criteria.prototype._populateCondition = function () {
-	        var conditionOpts = [];
-	        var conditionsLength = Object.keys(this.s.conditions).length;
-	        // If there are no conditions stored then we need to get them from the appropriate type
-	        if (conditionsLength === 0) {
-	            var column = $(this.dom.data).children('option:selected').val();
-	            this.s.type = this.s.dt.columns().type().toArray()[column];
-	            // If the column type is unknown, call a draw to try reading it again
-	            if (this.s.type === null) {
-	                this.s.dt.draw();
-	                this.setListeners();
-	                this.s.type = this.s.dt.columns().type().toArray()[column];
-	            }
-	            // Enable the condition element
-	            $(this.dom.condition)
-	                .attr('disabled', false)
-	                .empty()
-	                .append(this.dom.conditionTitle)
-	                .addClass(this.classes.italic);
-	            $(this.dom.conditionTitle)
-	                .attr('selected', true);
-	            var decimal = this.s.dt.settings()[0].oLanguage.sDecimal;
-	            // This check is in place for if a custom decimal character is in place
-	            if (decimal !== '' && this.s.type.indexOf(decimal) === this.s.type.length - decimal.length) {
-	                if (this.s.type.indexOf('num-fmt') !== -1) {
-	                    this.s.type = this.s.type.replace(decimal, '');
-	                }
-	                else if (this.s.type.indexOf('num') !== -1) {
-	                    this.s.type = this.s.type.replace(decimal, '');
-	                }
-	            }
-	            // Select which conditions are going to be used based on the column type
-	            var conditionObj = this.c.conditions[this.s.type] !== undefined ?
-	                this.c.conditions[this.s.type] :
-	                this.s.type.indexOf('moment') !== -1 ?
-	                    this.c.conditions.moment :
-	                    this.c.conditions.string;
-	            // If it is a moment format then extract the date format
-	            if (this.s.type.indexOf('moment') !== -1) {
-	                this.s.momentFormat = this.s.type.replace(/moment\-/g, '');
-	            }
-	            // Add all of the conditions to the select element
-	            for (var _i = 0, _a = Object.keys(conditionObj); _i < _a.length; _i++) {
-	                var condition = _a[_i];
-	                if (conditionObj[condition] !== null) {
-	                    this.s.conditions[condition] = conditionObj[condition];
-	                    var condName = conditionObj[condition].conditionName;
-	                    if (typeof condName === 'function') {
-	                        condName = condName(this.s.dt, this.c.i18n);
-	                    }
-	                    conditionOpts.push($('<option>', {
-	                        text: condName,
-	                        value: condition
-	                    })
-	                        .addClass(this.classes.option)
-	                        .addClass(this.classes.notItalic));
-	                }
-	            }
-	        }
-	        // Otherwise we can just load them in
-	        else if (conditionsLength > 0) {
-	            $(this.dom.condition).empty().attr('disabled', false).addClass(this.classes.italic);
-	            for (var _b = 0, _c = Object.keys(this.s.conditions); _b < _c.length; _b++) {
-	                var condition = _c[_b];
-	                var condName = this.s.conditions[condition].conditionName;
-	                if (typeof condName === 'function') {
-	                    condName = condName(this.s.dt, this.c.i18n);
-	                }
-	                var newOpt = $('<option>', {
-	                    text: condName,
-	                    value: condition
-	                })
-	                    .addClass(this.classes.option)
-	                    .addClass(this.classes.notItalic);
-	                if (this.s.condition !== undefined && this.s.condition === condName) {
-	                    $(newOpt).attr('selected', true);
-	                    $(this.dom.condition).removeClass(this.classes.italic);
-	                }
-	                conditionOpts.push(newOpt);
-	            }
-	        }
-	        else {
-	            $(this.dom.condition)
-	                .attr('disabled', true)
-	                .addClass(this.classes.italic);
-	            return;
-	        }
-	        for (var _d = 0, conditionOpts_1 = conditionOpts; _d < conditionOpts_1.length; _d++) {
-	            var opt = conditionOpts_1[_d];
-	            $(this.dom.condition).append(opt);
-	        }
-	        $(this.dom.condition).prop('selectedIndex', 0);
-	    };
-	    /**
-	     * Populates the data select element
-	     */
-	    Criteria.prototype._populateData = function () {
-	        var _this = this;
-	        $(this.dom.data).empty().append(this.dom.dataTitle);
-	        // If there are no datas stored then we need to get them from the table
-	        if (this.s.dataPoints.length === 0) {
-	            this.s.dt.columns().every(function (index) {
-	                // Need to check that the column can be filtered on before adding it
-	                if (_this.c.columns === true ||
-	                    (_this.s.dt.columns(_this.c.columns).indexes().toArray().indexOf(index) !== -1)) {
-	                    var found = false;
-	                    for (var _i = 0, _a = _this.s.dataPoints; _i < _a.length; _i++) {
-	                        var val = _a[_i];
-	                        if (val.index === index) {
-	                            found = true;
-	                            break;
-	                        }
-	                    }
-	                    if (!found) {
-	                        var opt = { text: _this.s.dt.settings()[0].aoColumns[index].sTitle, index: index };
-	                        _this.s.dataPoints.push(opt);
-	                        $(_this.dom.data).append($('<option>', {
-	                            text: opt.text,
-	                            value: opt.index
-	                        })
-	                            .addClass(_this.classes.option)
-	                            .addClass(_this.classes.notItalic));
-	                    }
-	                }
-	            });
-	        }
-	        // Otherwise we can just load them in
-	        else {
-	            var _loop_1 = function (data) {
-	                this_1.s.dt.columns().every(function (index) {
-	                    if (_this.s.dt.settings()[0].aoColumns[index].sTitle === data.text) {
-	                        data.index = index;
-	                    }
-	                });
-	                var newOpt = $('<option>', {
-	                    text: data.text,
-	                    value: data.index
-	                })
-	                    .addClass(this_1.classes.option)
-	                    .addClass(this_1.classes.notItalic);
-	                if (this_1.s.data === data.text) {
-	                    this_1.s.dataIdx = data.index;
-	                    $(newOpt).attr('selected', true);
-	                    $(this_1.dom.data).removeClass(this_1.classes.italic);
-	                }
-	                $(this_1.dom.data).append(newOpt);
-	            };
-	            var this_1 = this;
-	            for (var _i = 0, _a = this.s.dataPoints; _i < _a.length; _i++) {
-	                var data = _a[_i];
-	                _loop_1(data);
-	            }
-	        }
-	    };
-	    /**
-	     * Populates the Value select element
-	     * @param loadedCriteria optional, used to reload criteria from predefined filters
-	     */
-	    Criteria.prototype._populateValue = function (loadedCriteria) {
-	        var _this = this;
-	        var prevFilled = this.s.filled;
-	        this.s.filled = false;
-	        // Remove any previous value elements
-	        $(this.dom.defaultValue).remove();
-	        for (var _i = 0, _a = this.dom.value; _i < _a.length; _i++) {
-	            var val = _a[_i];
-	            $(val).remove();
-	        }
-	        var children = $(this.dom.container).children();
-	        if (children.length > 3) {
-	            for (var i = 2; i < children.length - 1; i++) {
-	                $(children[i]).remove();
-	            }
-	        }
-	        // Find the column with the title matching the data for the criteria and take note of the index
-	        if (loadedCriteria !== undefined) {
-	            this.s.dt.columns().every(function (index) {
-	                if (_this.s.dt.settings()[0].aoColumns[index].sTitle === loadedCriteria.data) {
-	                    _this.s.dataIdx = index;
-	                }
-	            });
-	        }
-	        // Initialise the value elements based on the condition
-	        this.dom.value = [].concat(this.s.conditions[this.s.condition].init(this, Criteria.updateListener, loadedCriteria !== undefined ? loadedCriteria.value : undefined));
-	        if (loadedCriteria !== undefined && loadedCriteria.value !== undefined) {
-	            this.s.value = loadedCriteria.value;
-	        }
-	        // Insert value elements and trigger the inserted event
-	        $(this.dom.value[0])
-	            .insertAfter(this.dom.condition)
-	            .trigger('dtsb-inserted');
-	        for (var i = 1; i < this.dom.value.length; i++) {
-	            $(this.dom.value[i])
-	                .insertAfter(this.dom.value[i - 1])
-	                .trigger('dtsb-inserted');
-	        }
-	        // Check if the criteria can be used in a search
-	        this.s.filled = this.s.conditions[this.s.condition].isInputValid(this.dom.value, this);
-	        this.setListeners();
-	        // If it can and this is different to before then trigger a draw
-	        if (prevFilled !== this.s.filled) {
-	            this.s.dt.draw();
-	            this.setListeners();
-	        }
-	    };
-	    Criteria.version = '1.0.0';
-	    Criteria.classes = {
-	        button: 'dtsb-button',
-	        buttonContainer: 'dtsb-buttonContainer',
-	        condition: 'dtsb-condition',
-	        container: 'dtsb-criteria',
-	        data: 'dtsb-data',
-	        "delete": 'dtsb-delete',
-	        dropDown: 'dtsb-dropDown',
-	        greyscale: 'dtsb-greyscale',
-	        input: 'dtsb-input',
-	        italic: 'dtsb-italic',
-	        joiner: 'dtsp-joiner',
-	        left: 'dtsb-left',
-	        notItalic: 'dtsb-notItalic',
-	        option: 'dtsb-option',
-	        right: 'dtsb-right',
-	        value: 'dtsb-value',
-	        vertical: 'dtsb-vertical'
-	    };
-	    /**
-	     * Default initialisation function for select conditions
-	     */
-	    Criteria.initSelect = function (that, fn, preDefined, array) {
-	        if (preDefined === void 0) { preDefined = null; }
-	        if (array === void 0) { array = false; }
-	        var column = $(that.dom.data).children('option:selected').val();
-	        var indexArray = that.s.dt.rows().indexes().toArray();
-	        var settings = that.s.dt.settings()[0];
-	        // Declare select element to be used with all of the default classes and listeners.
-	        var el = $('<select/>')
-	            .addClass(Criteria.classes.value)
-	            .addClass(Criteria.classes.dropDown)
-	            .addClass(Criteria.classes.italic)
-	            .append(that.dom.valueTitle)
-	            .on('input change', function () {
-	            $(this).removeClass(Criteria.classes.italic);
-	            fn(that, this);
-	        });
-	        if (that.c.greyscale) {
-	            $(el).addClass(Criteria.classes.greyscale);
-	        }
-	        var added = [];
-	        var options = [];
-	        // Add all of the options from the table to the select element.
-	        // Only add one option for each possible value
-	        for (var _i = 0, indexArray_1 = indexArray; _i < indexArray_1.length; _i++) {
-	            var index = indexArray_1[_i];
-	            var filter = settings.oApi._fnGetCellData(settings, index, column, typeof that.c.orthogonal === 'string' ?
-	                that.c.orthogonal :
-	                that.c.orthogonal.search);
-	            var value = {
-	                filter: typeof filter === 'string' ?
-	                    filter.replace(/[\r\n\u2028]/g, ' ') : // Need to replace certain characters to match the search values
-	                    filter,
-	                index: index,
-	                text: settings.oApi._fnGetCellData(settings, index, column, typeof that.c.orthogonal === 'string' ?
-	                    that.c.orthogonal :
-	                    that.c.orthogonal.display)
-	            };
-	            // If we are dealing with an array type, either make sure we are working with arrays, or sort them
-	            if (that.s.type === 'array') {
-	                value.filter = !Array.isArray(value.filter) ?
-	                    [value.filter] :
-	                    value.filter = value.filter.sort();
-	                value.text = !Array.isArray(value.text) ?
-	                    [value.text] :
-	                    value.text = value.text.sort();
-	            }
-	            // Function to add an option to the select element
-	            var addOption = function (filt, text) {
-	                // Add text and value, stripping out any html if that is the column type
-	                var opt = $('<option>', {
-	                    text: typeof text === 'string' ?
-	                        text.replace(/(<([^>]+)>)/ig, '') :
-	                        text,
-	                    type: Array.isArray(filt) ? 'Array' : 'String',
-	                    value: that.s.type.indexOf('html') !== -1 && filt !== null && typeof filt === 'string' ?
-	                        filt.replace(/(<([^>]+)>)/ig, '') :
-	                        filt
-	                })
-	                    .addClass(that.classes.option)
-	                    .addClass(that.classes.notItalic);
-	                var val = $(opt).val();
-	                // Check that this value has not already been added
-	                if (added.indexOf(val) === -1) {
-	                    added.push(val);
-	                    options.push(opt);
-	                    if (preDefined !== null && Array.isArray(preDefined[0])) {
-	                        preDefined[0] = preDefined[0].sort().join(',');
-	                    }
-	                    // If this value was previously selected as indicated by preDefined, then select it again
-	                    if (preDefined !== null && opt.val() === preDefined[0]) {
-	                        opt.attr('selected', true);
-	                        $(el).removeClass(Criteria.classes.italic);
-	                    }
-	                }
-	            };
-	            // If this is to add the individual values within the array we need to loop over the array
-	            if (array) {
-	                for (var i = 0; i < value.filter.length; i++) {
-	                    addOption(value.filter[i], value.text[i]);
-	                }
-	            }
-	            // Otherwise the value that is in the cell is to be added
-	            else {
-	                addOption(value.filter, value.text);
-	            }
-	        }
-	        options.sort(function (a, b) {
-	            if (that.s.type === 'string' || that.s.type === 'num' || that.s.type === 'html' || that.s.type === 'html-num') {
-	                if ($(a).val() < $(b).val()) {
-	                    return -1;
-	                }
-	                else if ($(a).val() < $(b).val()) {
-	                    return 1;
-	                }
-	                else {
-	                    return 0;
-	                }
-	            }
-	            else if (that.s.type === 'num-fmt' || that.s.type === 'html-num-fmt') {
-	                if (+$(a).val().replace(/[^0-9.]/g, '') < +$(b).val().replace(/[^0-9.]/g, '')) {
-	                    return -1;
-	                }
-	                else if (+$(a).val().replace(/[^0-9.]/g, '') < +$(b).val().replace(/[^0-9.]/g, '')) {
-	                    return 1;
-	                }
-	                else {
-	                    return 0;
-	                }
-	            }
-	        });
-	        for (var _a = 0, options_1 = options; _a < options_1.length; _a++) {
-	            var opt = options_1[_a];
-	            $(el).append(opt);
-	        }
-	        return el;
-	    };
-	    /**
-	     * Default initialisation function for select array conditions
-	     *
-	     * This exists because there needs to be different select functionality for contains/without and equals/not
-	     */
-	    Criteria.initSelectArray = function (that, fn, preDefined) {
-	        if (preDefined === void 0) { preDefined = null; }
-	        return Criteria.initSelect(that, fn, preDefined, true);
-	    };
-	    /**
-	     * Default initialisation function for input conditions
-	     */
-	    Criteria.initInput = function (that, fn, preDefined) {
-	        if (preDefined === void 0) { preDefined = null; }
-	        // Declare the input element
-	        var el = $('<input/>')
-	            .addClass(Criteria.classes.value)
-	            .addClass(Criteria.classes.input)
-	            .on('input', function () { fn(that, this); });
-	        if (that.c.greyscale) {
-	            $(el).addClass(Criteria.classes.greyscale);
-	        }
-	        // If there is a preDefined value then add it
-	        if (preDefined !== null) {
-	            $(el).val(preDefined[0]);
-	        }
-	        return el;
-	    };
-	    /**
-	     * Default initialisation function for conditions requiring 2 inputs
-	     */
-	    Criteria.init2Input = function (that, fn, preDefined) {
-	        if (preDefined === void 0) { preDefined = null; }
-	        // Declare all of the necessary jQuery elements
-	        var els = [
-	            $('<input/>')
-	                .addClass(Criteria.classes.value)
-	                .addClass(Criteria.classes.input)
-	                .on('input', function () { fn(that, this); }),
-	            $('<span>')
-	                .addClass(that.classes.joiner).text(that.s.dt.i18n('searchBuilder.valueJoiner', that.c.i18n.valueJoiner)),
-	            $('<input/>')
-	                .addClass(Criteria.classes.value)
-	                .addClass(Criteria.classes.input)
-	                .on('input', function () { fn(that, this); })
-	        ];
-	        if (that.c.greyscale) {
-	            $(els[0]).addClass(Criteria.classes.greyscale);
-	            $(els[2]).addClass(Criteria.classes.greyscale);
-	        }
-	        // If there is a preDefined value then add it
-	        if (preDefined !== null) {
-	            $(els[0]).val(preDefined[0]);
-	            $(els[2]).val(preDefined[1]);
-	        }
-	        that.s.dt.off('draw');
-	        that.s.dt.one('draw', function () {
-	            $(that.s.topGroup).trigger('dtsb-redrawContents');
-	        });
-	        return els;
-	    };
-	    /**
-	     * Default initialisation function for date conditions
-	     */
-	    Criteria.initDate = function (that, fn, preDefined) {
-	        if (preDefined === void 0) { preDefined = null; }
-	        // Declare date element using DataTables dateTime plugin
-	        var el = $('<input/>')
-	            .addClass(Criteria.classes.value)
-	            .addClass(Criteria.classes.input)
-	            .dtDateTime({
-	            attachTo: 'input',
-	            format: that.s.momentFormat ? that.s.momentFormat : undefined
-	        })
-	            .on('input change', function () { fn(that, this); });
-	        if (that.c.greyscale) {
-	            $(el).addClass(Criteria.classes.greyscale);
-	        }
-	        // If there is a preDefined value then add it
-	        if (preDefined !== null) {
-	            $(el).val(preDefined[0]);
-	        }
-	        return el;
-	    };
-	    Criteria.initNoValue = function (that) {
-	        that.s.dt.off('draw');
-	        that.s.dt.one('draw', function () {
-	            $(that.s.topGroup).trigger('dtsb-redrawContents');
-	        });
-	    };
-	    Criteria.init2Date = function (that, fn, preDefined) {
-	        if (preDefined === void 0) { preDefined = null; }
-	        // Declare all of the date elements that are required using DataTables dateTime plugin
-	        var els = [
-	            $('<input/>')
-	                .addClass(Criteria.classes.value)
-	                .addClass(Criteria.classes.input)
-	                .dtDateTime({
-	                attachTo: 'input',
-	                format: that.s.momentFormat ? that.s.momentFormat : undefined
-	            })
-	                .on('input change', function () { fn(that, this); }),
-	            $('<span>')
-	                .addClass(that.classes.joiner)
-	                .text(that.s.dt.i18n('searchBuilder.valueJoiner', that.c.i18n.valueJoiner)),
-	            $('<input/>')
-	                .addClass(Criteria.classes.value)
-	                .addClass(Criteria.classes.input)
-	                .dtDateTime({
-	                attachTo: 'input',
-	                format: that.s.momentFormat ? that.s.momentFormat : undefined
-	            })
-	                .on('input change', function () { fn(that, this); })
-	        ];
-	        if (that.c.greyscale) {
-	            $(els[0]).addClass(Criteria.classes.greyscale);
-	            $(els[2]).addClass(Criteria.classes.greyscale);
-	        }
-	        // If there are and preDefined values then add them
-	        if (preDefined !== null && preDefined.length > 0) {
-	            $(els[0]).val(preDefined[0]);
-	            $(els[2]).val(preDefined[1]);
-	        }
-	        that.s.dt.off('draw');
-	        that.s.dt.one('draw', function () {
-	            $(that.s.topGroup).trigger('dtsb-redrawContents');
-	        });
-	        return els;
-	    };
-	    /**
-	     * Default function for select elements to validate condition
-	     */
-	    Criteria.isInputValidSelect = function (el) {
-	        var allFilled = true;
-	        // Check each element to make sure that the selections are valid
-	        for (var _i = 0, el_1 = el; _i < el_1.length; _i++) {
-	            var element = el_1[_i];
-	            if ($(element).children('option:selected').length === $(element).children('option').length - $(element).children('option.' + Criteria.classes.notItalic).length &&
-	                $(element).children('option:selected').length === 1 &&
-	                $(element).children('option:selected')[0] === $(element).children('option:hidden')[0]) {
-	                allFilled = false;
-	            }
-	        }
-	        return allFilled;
-	    };
-	    /**
-	     * Default function for input and date elements to validate condition
-	     */
-	    Criteria.isInputValidInput = function (el) {
-	        var allFilled = true;
-	        // Check each element to make sure that the inputs are valid
-	        for (var _i = 0, el_2 = el; _i < el_2.length; _i++) {
-	            var element = el_2[_i];
-	            if ($(element).is('input') && $(element).val().length === 0) {
-	                allFilled = false;
-	            }
-	        }
-	        return allFilled;
-	    };
-	    /**
-	     * Default function for getting select conditions
-	     */
-	    Criteria.inputValueSelect = function (el) {
-	        var values = [];
-	        // Go through the select elements and push each selected option to the return array
-	        for (var _i = 0, el_3 = el; _i < el_3.length; _i++) {
-	            var element = el_3[_i];
-	            if ($(element).is('select')) {
-	                var val = $(element).children('option:selected').val();
-	                // If the type of the option is an array we need to split it up and sort it
-	                values.push($(element).children('option:selected').attr('type') === 'Array' ?
-	                    val.split(',').sort() :
-	                    val);
-	            }
-	        }
-	        return values;
-	    };
-	    /**
-	     * Default function for getting input conditions
-	     */
-	    Criteria.inputValueInput = function (el) {
-	        var values = [];
-	        // Go through the input elements and push each value to the return array
-	        for (var _i = 0, el_4 = el; _i < el_4.length; _i++) {
-	            var element = el_4[_i];
-	            if ($(element).is('input')) {
-	                values.push($(element).val());
-	            }
-	        }
-	        return values;
-	    };
-	    /**
-	     * Function that is run on each element as a call back when a search should be triggered
-	     */
-	    Criteria.updateListener = function (that, el) {
-	        // When the value is changed the criteria is now complete so can be included in searches
-	        // Get the condition from the map based on the key that has been selected for the condition
-	        var condition = that.s.conditions[that.s.condition];
-	        that.s.filled = condition.isInputValid(that.dom.value, that);
-	        that.s.value = condition.inputValue(that.dom.value, that);
-	        if (!Array.isArray(that.s.value)) {
-	            that.s.value = [that.s.value];
-	        }
-	        for (var i = 0; i < that.s.value.length; i++) {
-	            // If the value is an array we need to sort it
-	            if (Array.isArray(that.s.value[i])) {
-	                that.s.value[i].sort();
-	            }
-	            // Otherwise replace the decimal place character for i18n
-	            else if (that.s.dt.settings()[0].oLanguage.sDecimal !== '') {
-	                that.s.value[i] = that.s.value[i].replace(that.s.dt.settings()[0].oLanguage.sDecimal, '.');
-	            }
-	        }
-	        // Take note of the cursor position so that we can refocus there later
-	        var idx = null;
-	        var cursorPos = null;
-	        for (var i = 0; i < that.dom.value.length; i++) {
-	            if (el === that.dom.value[i][0]) {
-	                idx = i;
-	                if (el.selectionStart !== undefined) {
-	                    cursorPos = el.selectionStart;
-	                }
-	            }
-	        }
-	        // Trigger a search
-	        that.s.dt.draw();
-	        // Refocus the element and set the correct cursor position
-	        if (idx !== null) {
-	            $(that.dom.value[idx]).removeClass(that.classes.italic);
-	            $(that.dom.value[idx]).focus();
-	            if (cursorPos !== null) {
-	                $(that.dom.value[idx])[0].setSelectionRange(cursorPos, cursorPos);
-	            }
-	        }
-	    };
-	    // The order of the conditions will make tslint sad :(
-	    Criteria.dateConditions = {
-	        '=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.equals', i18n.conditions.date.equals);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                value = value.replace(/(\/|\-|\,)/g, '-');
-	                return value === comparison[0];
-	            }
-	        },
-	        '!=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.not', i18n.conditions.date.not);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                value = value.replace(/(\/|\-|\,)/g, '-');
-	                return value !== comparison[0];
-	            }
-	        },
-	        '<': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.before', i18n.conditions.date.before);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                value = value.replace(/(\/|\-|\,)/g, '-');
-	                return value < comparison[0];
-	            }
-	        },
-	        '>': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.after', i18n.conditions.date.after);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                value = value.replace(/(\/|\-|\,)/g, '-');
-	                return value > comparison[0];
-	            }
-	        },
-	        'between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.between', i18n.conditions.date.between);
-	            },
-	            init: Criteria.init2Date,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                value = value.replace(/(\/|\-|\,)/g, '-');
-	                if (comparison[0] < comparison[1]) {
-	                    return comparison[0] <= value && value <= comparison[1];
-	                }
-	                else {
-	                    return comparison[1] <= value && value <= comparison[0];
-	                }
-	            }
-	        },
-	        '!between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.notBetween', i18n.conditions.date.notBetween);
-	            },
-	            init: Criteria.init2Date,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                value = value.replace(/(\/|\-|\,)/g, '-');
-	                if (comparison[0] < comparison[1]) {
-	                    return !(comparison[0] <= value && value <= comparison[1]);
-	                }
-	                else {
-	                    return !(comparison[1] <= value && value <= comparison[0]);
-	                }
-	            }
-	        },
-	        'null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.empty', i18n.conditions.date.empty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return (value === null || value === undefined || value.length === 0);
-	            }
-	        },
-	        '!null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.date.notEmpty', i18n.conditions.date.notEmpty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return !(value === null || value === undefined || value.length === 0);
-	            }
-	        }
-	    };
-	    // The order of the conditions will make tslint sad :(
-	    Criteria.momentDateConditions = {
-	        '=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.equals', i18n.conditions.moment.equals);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison, that) {
-	                return moment(value, that.s.momentFormat).valueOf() === moment(comparison[0], that.s.momentFormat).valueOf();
-	            }
-	        },
-	        '!=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.not', i18n.conditions.moment.not);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison, that) {
-	                return moment(value, that.s.momentFormat).valueOf() !== moment(comparison[0], that.s.momentFormat).valueOf();
-	            }
-	        },
-	        '<': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.before', i18n.conditions.moment.before);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison, that) {
-	                return moment(value, that.s.momentFormat).valueOf() < moment(comparison[0], that.s.momentFormat).valueOf();
-	            }
-	        },
-	        '>': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.after', i18n.conditions.moment.after);
-	            },
-	            init: Criteria.initDate,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison, that) {
-	                return moment(value, that.s.momentFormat).valueOf() > moment(comparison[0], that.s.momentFormat).valueOf();
-	            }
-	        },
-	        'between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.between', i18n.conditions.moment.between);
-	            },
-	            init: Criteria.init2Date,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison, that) {
-	                var val = moment(value, that.s.momentFormat).valueOf();
-	                var comp0 = moment(comparison[0], that.s.momentFormat).valueOf();
-	                var comp1 = moment(comparison[1], that.s.momentFormat).valueOf();
-	                if (comp0 < comp1) {
-	                    return comp0 <= val && val <= comp1;
-	                }
-	                else {
-	                    return comp1 <= val && val <= comp0;
-	                }
-	            }
-	        },
-	        '!between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.notBetween', i18n.conditions.moment.notBetween);
-	            },
-	            init: Criteria.init2Date,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison, that) {
-	                var val = moment(value, that.s.momentFormat).valueOf();
-	                var comp0 = moment(comparison[0], that.s.momentFormat).valueOf();
-	                var comp1 = moment(comparison[1], that.s.momentFormat).valueOf();
-	                if (comp0 < comp1) {
-	                    return !(+comp0 <= +val && +val <= +comp1);
-	                }
-	                else {
-	                    return !(+comp1 <= +val && +val <= +comp0);
-	                }
-	            }
-	        },
-	        'null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.empty', i18n.conditions.moment.empty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return (value === null || value === undefined || value.length === 0);
-	            }
-	        },
-	        '!null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.moment.notEmpty', i18n.conditions.moment.notEmpty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return !(value === null || value === undefined || value.length === 0);
-	            }
-	        }
-	    };
-	    // The order of the conditions will make tslint sad :(
-	    Criteria.numConditions = {
-	        '=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.equals', i18n.conditions.number.equals);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                return +value === +comparison[0];
-	            }
-	        },
-	        '!=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.not', i18n.conditions.number.not);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                return +value !== +comparison[0];
-	            }
-	        },
-	        '<': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.lt', i18n.conditions.number.lt);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return +value < +comparison[0];
-	            }
-	        },
-	        '<=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.lte', i18n.conditions.number.lte);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return +value <= +comparison[0];
-	            }
-	        },
-	        '>=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.gte', i18n.conditions.number.gte);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return +value >= +comparison[0];
-	            }
-	        },
-	        '>': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.gt', i18n.conditions.number.gt);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return +value > +comparison[0];
-	            }
-	        },
-	        'between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.between', i18n.conditions.number.between);
-	            },
-	            init: Criteria.init2Input,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                if (+comparison[0] < +comparison[1]) {
-	                    return +comparison[0] <= +value && +value <= +comparison[1];
-	                }
-	                else {
-	                    return +comparison[1] <= +value && +value <= +comparison[0];
-	                }
-	            }
-	        },
-	        '!between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.notBetween', i18n.conditions.number.notBetween);
-	            },
-	            init: Criteria.init2Input,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                if (+comparison[0] < +comparison[1]) {
-	                    return !(+comparison[0] <= +value && +value <= +comparison[1]);
-	                }
-	                else {
-	                    return !(+comparison[1] <= +value && +value <= +comparison[0]);
-	                }
-	            }
-	        },
-	        'null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.empty', i18n.conditions.number.empty);
-	            },
-	            init: Criteria.initNoValue,
-	            inputValue: function () { return; },
-	            isInputValid: function () { return true; },
-	            search: function (value) {
-	                return (value === null || value === undefined || value.length === 0);
-	            }
-	        },
-	        '!null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.notEmpty', i18n.conditions.number.notEmpty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return !(value === null || value === undefined || value.length === 0);
-	            }
-	        }
-	    };
-	    // The order of the conditions will make tslint sad :(
-	    Criteria.numFmtConditions = {
-	        '=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.equals', i18n.conditions.number.equals);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                return +val === +comp;
-	            }
-	        },
-	        '!=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.not', i18n.conditions.number.not);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                return +val !== +comp;
-	            }
-	        },
-	        '<': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.lt', i18n.conditions.number.lt);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                return +val < +comp;
-	            }
-	        },
-	        '<=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.lte', i18n.conditions.number.lte);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                return +val <= +comp;
-	            }
-	        },
-	        '>=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.gte', i18n.conditions.number.gte);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                return +val >= +comp;
-	            }
-	        },
-	        '>': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.gt', i18n.conditions.number.gt);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                return +val > +comp;
-	            }
-	        },
-	        'between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.between', i18n.conditions.number.between);
-	            },
-	            init: Criteria.init2Input,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp0 = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                var comp1 = comparison[1].indexOf('-') === 0 ?
-	                    '-' + comparison[1].replace(/[^0-9.]/g, '') :
-	                    comparison[1].replace(/[^0-9.]/g, '');
-	                if (+comp0 < +comp1) {
-	                    return +comp0 <= +val && +val <= +comp1;
-	                }
-	                else {
-	                    return +comp1 <= +val && +val <= +comp0;
-	                }
-	            }
-	        },
-	        '!between': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.notBetween', i18n.conditions.number.notBetween);
-	            },
-	            init: Criteria.init2Input,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                var val = value.indexOf('-') === 0 ?
-	                    '-' + value.replace(/[^0-9.]/g, '') :
-	                    value.replace(/[^0-9.]/g, '');
-	                var comp0 = comparison[0].indexOf('-') === 0 ?
-	                    '-' + comparison[0].replace(/[^0-9.]/g, '') :
-	                    comparison[0].replace(/[^0-9.]/g, '');
-	                var comp1 = comparison[1].indexOf('-') === 0 ?
-	                    '-' + comparison[1].replace(/[^0-9.]/g, '') :
-	                    comparison[1].replace(/[^0-9.]/g, '');
-	                if (+comp0 < +comp1) {
-	                    return !(+comp0 <= +val && +val <= +comp1);
-	                }
-	                else {
-	                    return !(+comp1 <= +val && +val <= +comp0);
-	                }
-	            }
-	        },
-	        'null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.empty', i18n.conditions.number.empty);
-	            },
-	            init: Criteria.initNoValue,
-	            inputValue: function () { return; },
-	            isInputValid: function () { return true; },
-	            search: function (value) {
-	                return (value === null || value === undefined || value.length === 0);
-	            }
-	        },
-	        '!null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.number.notEmpty', i18n.conditions.number.notEmpty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return !(value === null || value === undefined || value.length === 0);
-	            }
-	        }
-	    };
-	    // The order of the conditions will make tslint sad :(
-	    Criteria.stringConditions = {
-	        '=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.equals', i18n.conditions.string.equals);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                return value === comparison[0];
-	            }
-	        },
-	        '!=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.not', i18n.conditions.string.not);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return value !== comparison[0];
-	            }
-	        },
-	        'starts': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.startsWith', i18n.conditions.string.startsWith);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return value.toLowerCase().indexOf(comparison[0].toLowerCase()) === 0;
-	            }
-	        },
-	        'contains': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.contains', i18n.conditions.string.contains);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return value.toLowerCase().indexOf(comparison[0].toLowerCase()) !== -1;
-	            }
-	        },
-	        'ends': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.endsWith', i18n.conditions.string.endsWith);
-	            },
-	            init: Criteria.initInput,
-	            inputValue: Criteria.inputValueInput,
-	            isInputValid: Criteria.isInputValidInput,
-	            search: function (value, comparison) {
-	                return value.toLowerCase().endsWith(comparison[0].toLowerCase());
-	            }
-	        },
-	        'null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.empty', i18n.conditions.string.empty);
-	            },
-	            init: Criteria.initNoValue,
-	            inputValue: function () { return; },
-	            isInputValid: function () { return true; },
-	            search: function (value) {
-	                return (value === null || value === undefined || value.length === 0);
-	            }
-	        },
-	        '!null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.string.notEmpty', i18n.conditions.string.notEmpty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () {
-	                return;
-	            },
-	            search: function (value) {
-	                return !(value === null || value === undefined || value.length === 0);
-	            }
-	        }
-	    };
-	    // The order of the conditions will make tslint sad :(
-	    Criteria.arrayConditions = {
-	        'contains': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.array.contains', i18n.conditions.array.contains);
-	            },
-	            init: Criteria.initSelectArray,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                return value.indexOf(comparison[0]) !== -1;
-	            }
-	        },
-	        'without': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.array.without', i18n.conditions.array.without);
-	            },
-	            init: Criteria.initSelectArray,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                return value.indexOf(comparison[0]) === -1;
-	            }
-	        },
-	        '=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.array.equals', i18n.conditions.array.equals);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                if (value.length === comparison[0].length) {
-	                    for (var i = 0; i < value.length; i++) {
-	                        if (value[i] !== comparison[0][i]) {
-	                            return false;
-	                        }
-	                    }
-	                    return true;
-	                }
-	                return false;
-	            }
-	        },
-	        '!=': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.array.not', i18n.conditions.array.not);
-	            },
-	            init: Criteria.initSelect,
-	            inputValue: Criteria.inputValueSelect,
-	            isInputValid: Criteria.isInputValidSelect,
-	            search: function (value, comparison) {
-	                if (value.length === comparison[0].length) {
-	                    for (var i = 0; i < value.length; i++) {
-	                        if (value[i] !== comparison[0][i]) {
-	                            return true;
-	                        }
-	                    }
-	                    return false;
-	                }
-	                return true;
-	            }
-	        },
-	        'null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.array.empty', i18n.conditions.array.empty);
-	            },
-	            init: Criteria.initNoValue,
-	            isInputValid: function () { return true; },
-	            inputValue: function () { return; },
-	            search: function (value) {
-	                return (value === null || value === undefined || value.length === 0);
-	            }
-	        },
-	        '!null': {
-	            conditionName: function (dt, i18n) {
-	                return dt.i18n('searchBuilder.conditions.array.notEmpty', i18n.conditions.array.notEmpty);
-	            },
-	            isInputValid: function () { return true; },
-	            init: Criteria.initNoValue,
-	            inputValue: function () { return; },
-	            search: function (value) {
-	                return (value !== null && value !== undefined && value.length !== 0);
-	            }
-	        }
-	    };
-	    Criteria.defaults = {
-	        columns: true,
-	        conditions: {
-	            'array': Criteria.arrayConditions,
-	            'date': Criteria.dateConditions,
-	            'html': Criteria.stringConditions,
-	            'html-num': Criteria.numConditions,
-	            'html-num-fmt': Criteria.numFmtConditions,
-	            'moment': Criteria.momentDateConditions,
-	            'num': Criteria.numConditions,
-	            'num-fmt': Criteria.numFmtConditions,
-	            'string': Criteria.stringConditions
-	        },
-	        depthLimit: false,
-	        filterChanged: undefined,
-	        greyscale: false,
-	        i18n: {
-	            add: 'Add Condition',
-	            button: {
-	                0: 'Search Builder',
-	                _: 'Search Builder (%d)'
-	            },
-	            clearAll: 'Clear All',
-	            condition: 'Condition',
-	            data: 'Data',
-	            deleteTitle: 'Delete filtering rule',
-	            leftTitle: 'Outdent criteria',
-	            logicAnd: 'And',
-	            logicOr: 'Or',
-	            rightTitle: 'Indent criteria',
-	            title: {
-	                0: 'Custom Search Builder',
-	                _: 'Custom Search Builder (%d)'
-	            },
-	            value: 'Value',
-	            valueJoiner: 'and'
-	        },
-	        logic: 'AND',
-	        orthogonal: {
-	            display: 'display',
-	            search: 'filter'
-	        },
-	        preDefined: false
-	    };
-	    return Criteria;
-	}());
-
-	var $$1;
-	var DataTable$1;
-	/**
-	 * Sets the value of jQuery for use in the file
-	 * @param jq the instance of jQuery to be set
-	 */
-	function setJQuery$1(jq) {
-	    $$1 = jq;
-	    DataTable$1 = jq.fn.dataTable;
-	}
-	/**
-	 * The Group class is used within SearchBuilder to represent a group of criteria
-	 */
-	var Group = /** @class */ (function () {
-	    function Group(table, opts, topGroup, index, isChild, depth) {
-	        if (index === void 0) { index = 0; }
-	        if (isChild === void 0) { isChild = false; }
-	        if (depth === void 0) { depth = 1; }
-	        // Check that the required version of DataTables is included
-	        if (!DataTable$1 || !DataTable$1.versionCheck || !DataTable$1.versionCheck('1.10.0')) {
-	            throw new Error('SearchBuilder requires DataTables 1.10 or newer');
-	        }
-	        this.classes = $$1.extend(true, {}, Group.classes);
-	        // Get options from user
-	        this.c = $$1.extend(true, {}, Group.defaults, opts);
-	        this.s = {
-	            criteria: [],
-	            depth: depth,
-	            dt: table,
-	            index: index,
-	            isChild: isChild,
-	            logic: undefined,
-	            opts: opts,
-	            toDrop: undefined,
-	            topGroup: topGroup
-	        };
-	        this.dom = {
-	            add: $$1('<button/>')
-	                .addClass(this.classes.add)
-	                .addClass(this.classes.button)
-	                .attr('type', 'button'),
-	            clear: $$1('<button>&times</button>')
-	                .addClass(this.classes.button)
-	                .addClass(this.classes.clearGroup)
-	                .attr('type', 'button'),
-	            container: $$1('<div/>')
-	                .addClass(this.classes.group),
-	            logic: $$1('<button/>')
-	                .addClass(this.classes.logic)
-	                .addClass(this.classes.button)
-	                .attr('type', 'button'),
-	            logicContainer: $$1('<div/>')
-	                .addClass(this.classes.logicContainer)
-	        };
-	        // A reference to the top level group is maintained throughout any subgroups and criteria that may be created
-	        if (this.s.topGroup === undefined) {
-	            this.s.topGroup = this.dom.container;
-	        }
-	        this._setup();
-	        return this;
-	    }
-	    /**
-	     * Destroys the groups buttons, clears the internal criteria and removes it from the dom
-	     */
-	    Group.prototype.destroy = function () {
-	        // Turn off listeners
-	        $$1(this.dom.add).off('.dtsb');
-	        $$1(this.dom.logic).off('.dtsb');
-	        // Trigger event for groups at a higher level to pick up on
-	        $$1(this.dom.container)
-	            .trigger('dtsb-destroy')
-	            .remove();
-	        this.s.criteria = [];
-	    };
-	    /**
-	     * Gets the details required to rebuild the group
-	     */
-	    Group.prototype.getDetails = function () {
-	        if (this.s.criteria.length === 0) {
-	            return {};
-	        }
-	        var details = {
-	            criteria: [],
-	            logic: this.s.logic
-	        };
-	        // NOTE here crit could be either a subgroup or a criteria
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            details.criteria.push(crit.criteria.getDetails());
-	        }
-	        return details;
-	    };
-	    /**
-	     * Getter for the node for the container of the group
-	     * @returns Node for the container of the group
-	     */
-	    Group.prototype.getNode = function () {
-	        return this.dom.container;
-	    };
-	    /**
-	     * Rebuilds the group based upon the details passed in
-	     * @param loadedDetails the details required to rebuild the group
-	     */
-	    Group.prototype.rebuild = function (loadedDetails) {
-	        // If no criteria are stored then just return
-	        if (loadedDetails.criteria === undefined || loadedDetails.criteria === null || loadedDetails.criteria.length === 0) {
-	            return;
-	        }
-	        this.s.logic = loadedDetails.logic;
-	        $$1(this.dom.logic).text(this.s.logic === 'OR'
-	            ? this.s.dt.i18n('searchBuilder.logicOr', this.c.i18n.logicOr)
-	            : this.s.dt.i18n('searchBuilder.logicAnd', this.c.i18n.logicAnd));
-	        // Add all of the criteria, be it a sub group or a criteria
-	        for (var _i = 0, _a = loadedDetails.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            if (crit.logic !== undefined) {
-	                this._addPrevGroup(crit);
-	            }
-	            else if (crit.logic === undefined) {
-	                this._addPrevCriteria(crit);
-	            }
-	        }
-	        // For all of the criteria children, update the arrows incase they require changing and set the listeners
-	        for (var _b = 0, _c = this.s.criteria; _b < _c.length; _b++) {
-	            var crit = _c[_b];
-	            if (crit.criteria instanceof Criteria) {
-	                crit.criteria.updateArrows(this.s.criteria.length > 1, false);
-	                this._setCriteriaListeners(crit.criteria);
-	            }
-	        }
-	    };
-	    /**
-	     * Redraws the Contents of the searchBuilder Groups and Criteria
-	     */
-	    Group.prototype.redrawContents = function () {
-	        // Clear the container out and add the basic elements
-	        $$1(this.dom.container)
-	            .empty()
-	            .append(this.dom.logicContainer)
-	            .append(this.dom.add);
-	        // Sort the criteria by index so that they appear in the correct order
-	        this.s.criteria.sort(function (a, b) {
-	            if (a.criteria.s.index < b.criteria.s.index) {
-	                return -1;
-	            }
-	            else if (a.criteria.s.index > b.criteria.s.index) {
-	                return 1;
-	            }
-	            return 0;
-	        });
-	        this.setListeners();
-	        for (var i = 0; i < this.s.criteria.length; i++) {
-	            var crit = this.s.criteria[i].criteria;
-	            if (crit instanceof Criteria) {
-	                // Reset the index to the new value
-	                this.s.criteria[i].index = i;
-	                this.s.criteria[i].criteria.s.index = i;
-	                // Add to the group
-	                $$1(this.s.criteria[i].criteria.dom.container).insertBefore(this.dom.add);
-	                // Set listeners for various points
-	                this._setCriteriaListeners(crit);
-	                this.s.criteria[i].criteria.rebuild(this.s.criteria[i].criteria.getDetails());
-	            }
-	            else if (crit instanceof Group && crit.s.criteria.length > 0) {
-	                // Reset the index to the new value
-	                this.s.criteria[i].index = i;
-	                this.s.criteria[i].criteria.s.index = i;
-	                // Add the sub group to the group
-	                $$1(this.s.criteria[i].criteria.dom.container).insertBefore(this.dom.add);
-	                // Redraw the contents of the group
-	                crit.redrawContents();
-	                this._setGroupListeners(crit);
-	            }
-	            else {
-	                // The group is empty so remove it
-	                this.s.criteria.splice(i, 1);
-	                i--;
-	            }
-	        }
-	        this.setupLogic();
-	    };
-	    /**
-	     * Search method, checking the row data against the criteria in the group
-	     * @param rowData The row data to be compared
-	     * @returns boolean The result of the search
-	     */
-	    Group.prototype.search = function (rowData, rowIdx) {
-	        if (this.s.logic === 'AND') {
-	            return this._andSearch(rowData, rowIdx);
-	        }
-	        else if (this.s.logic === 'OR') {
-	            return this._orSearch(rowData, rowIdx);
-	        }
-	        return true;
-	    };
-	    /**
-	     * Locates the groups logic button to the correct location on the page
-	     */
-	    Group.prototype.setupLogic = function () {
-	        // Remove logic button
-	        $$1(this.dom.logicContainer).remove();
-	        $$1(this.dom.clear).remove();
-	        // If there are no criteria in the group then keep the logic removed and return
-	        if (this.s.criteria.length < 1) {
-	            if (!this.s.isChild) {
-	                $$1(this.dom.container).trigger('dtsb-destroy');
-	                // Set criteria left margin
-	                $$1(this.dom.container).css('margin-left', 0);
-	            }
-	            return;
-	        }
-	        // Set width, take 2 for the border
-	        var height = $$1(this.dom.container).height() - 2;
-	        $$1(this.dom.clear).height('0px');
-	        $$1(this.dom.logicContainer).append(this.dom.clear).width(height);
-	        // Prepend logic button
-	        $$1(this.dom.container).prepend(this.dom.logicContainer);
-	        this._setLogicListener();
-	        // Set criteria left margin
-	        $$1(this.dom.container).css('margin-left', $$1(this.dom.logicContainer).outerHeight(true));
-	        var logicOffset = $$1(this.dom.logicContainer).offset();
-	        // Set horizontal alignment
-	        var currentLeft = logicOffset.left;
-	        var groupLeft = $$1(this.dom.container).offset().left;
-	        var shuffleLeft = currentLeft - groupLeft;
-	        var newPos = currentLeft - shuffleLeft - $$1(this.dom.logicContainer).outerHeight(true);
-	        $$1(this.dom.logicContainer).offset({ left: newPos });
-	        // Set vertical alignment
-	        var firstCrit = $$1(this.dom.logicContainer).next();
-	        var currentTop = logicOffset.top;
-	        var firstTop = $$1(firstCrit).offset().top;
-	        var shuffleTop = currentTop - firstTop;
-	        var newTop = currentTop - shuffleTop;
-	        $$1(this.dom.logicContainer).offset({ top: newTop });
-	        $$1(this.dom.clear).outerHeight($$1(this.dom.logicContainer).height());
-	        this._setClearListener();
-	    };
-	    /**
-	     * Sets listeners on the groups elements
-	     */
-	    Group.prototype.setListeners = function () {
-	        var _this = this;
-	        $$1(this.dom.add).unbind('click');
-	        $$1(this.dom.add).on('click', function () {
-	            // If this is the parent group then the logic button has not been added yet
-	            if (!_this.s.isChild) {
-	                $$1(_this.dom.container).prepend(_this.dom.logicContainer);
-	            }
-	            _this.addCriteria();
-	            $$1(_this.dom.container).trigger('dtsb-add');
-	            _this.s.dt.state.save();
-	            return false;
-	        });
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            crit.criteria.setListeners();
-	        }
-	        this._setClearListener();
-	        this._setLogicListener();
-	    };
-	    /**
-	     * Adds a criteria to the group
-	     * @param crit Instance of Criteria to be added to the group
-	     */
-	    Group.prototype.addCriteria = function (crit, redraw) {
-	        if (crit === void 0) { crit = null; }
-	        if (redraw === void 0) { redraw = true; }
-	        var index = crit === null ? this.s.criteria.length : crit.s.index;
-	        var criteria = new Criteria(this.s.dt, this.s.opts, this.s.topGroup, index, this.s.depth);
-	        // If a Criteria has been passed in then set the values to continue that
-	        if (crit !== null) {
-	            criteria.c = crit.c;
-	            criteria.s = crit.s;
-	            criteria.s.depth = this.s.depth;
-	            criteria.classes = crit.classes;
-	        }
-	        criteria.populate();
-	        var inserted = false;
-	        for (var i = 0; i < this.s.criteria.length; i++) {
-	            if (i === 0 && this.s.criteria[i].criteria.s.index > criteria.s.index) {
-	                // Add the node for the criteria at the start of the group
-	                $$1(criteria.getNode()).insertBefore(this.s.criteria[i].criteria.dom.container);
-	                inserted = true;
-	            }
-	            else if (i < this.s.criteria.length - 1 &&
-	                this.s.criteria[i].criteria.s.index < criteria.s.index &&
-	                this.s.criteria[i + 1].criteria.s.index > criteria.s.index) {
-	                // Add the node for the criteria in the correct location
-	                $$1(criteria.getNode()).insertAfter(this.s.criteria[i].criteria.dom.container);
-	                inserted = true;
-	            }
-	        }
-	        if (!inserted) {
-	            $$1(criteria.getNode()).insertBefore(this.dom.add);
-	        }
-	        // Add the details for this criteria to the array
-	        this.s.criteria.push({
-	            criteria: criteria,
-	            index: index
-	        });
-	        this.s.criteria = this.s.criteria.sort(function (a, b) {
-	            return a.criteria.s.index - b.criteria.s.index;
-	        });
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var opt = _a[_i];
-	            if (opt.criteria instanceof Criteria) {
-	                opt.criteria.updateArrows(this.s.criteria.length > 1, redraw);
-	            }
-	        }
-	        this._setCriteriaListeners(criteria);
-	        criteria.setListeners();
-	        this.setupLogic();
-	    };
-	    /**
-	     * Checks the group to see if it has any filled criteria
-	     */
-	    Group.prototype.checkFilled = function () {
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            if ((crit.criteria instanceof Criteria && crit.criteria.s.filled) ||
-	                (crit.criteria instanceof Group && crit.criteria.checkFilled())) {
-	                return true;
-	            }
-	        }
-	        return false;
-	    };
-	    /**
-	     * Gets the count for the number of criteria in this group and any sub groups
-	     */
-	    Group.prototype.count = function () {
-	        var count = 0;
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            if (crit.criteria instanceof Group) {
-	                count += crit.criteria.count();
-	            }
-	            else {
-	                count++;
-	            }
-	        }
-	        return count;
-	    };
-	    /**
-	     * Rebuilds a sub group that previously existed
-	     * @param loadedGroup The details of a group within this group
-	     */
-	    Group.prototype._addPrevGroup = function (loadedGroup) {
-	        var idx = this.s.criteria.length;
-	        var group = new Group(this.s.dt, this.c, this.s.topGroup, idx, true, this.s.depth + 1);
-	        // Add the new group to the criteria array
-	        this.s.criteria.push({
-	            criteria: group,
-	            index: idx,
-	            logic: group.s.logic
-	        });
-	        // Rebuild it with the previous conditions for that group
-	        group.rebuild(loadedGroup);
-	        this.s.criteria[idx].criteria = group;
-	        $$1(this.s.topGroup).trigger('dtsb-redrawContents');
-	        this._setGroupListeners(group);
-	    };
-	    /**
-	     * Rebuilds a criteria of this group that previously existed
-	     * @param loadedCriteria The details of a criteria within the group
-	     */
-	    Group.prototype._addPrevCriteria = function (loadedCriteria) {
-	        var idx = this.s.criteria.length;
-	        var criteria = new Criteria(this.s.dt, this.s.opts, this.s.topGroup, idx, this.s.depth);
-	        criteria.populate();
-	        // Add the new criteria to the criteria array
-	        this.s.criteria.push({
-	            criteria: criteria,
-	            index: idx
-	        });
-	        // Rebuild it with the previous conditions for that criteria
-	        criteria.rebuild(loadedCriteria);
-	        this.s.criteria[idx].criteria = criteria;
-	        $$1(this.s.topGroup).trigger('dtsb-redrawContents');
-	    };
-	    /**
-	     * Checks And the criteria using AND logic
-	     * @param rowData The row data to be checked against the search criteria
-	     * @returns boolean The result of the AND search
-	     */
-	    Group.prototype._andSearch = function (rowData, rowIdx) {
-	        // If there are no criteria then return true for this group
-	        if (this.s.criteria.length === 0) {
-	            return true;
-	        }
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            // If the criteria is not complete then skip it
-	            if (crit.criteria instanceof Criteria && !crit.criteria.s.filled) {
-	                continue;
-	            }
-	            // Otherwise if a single one fails return false
-	            else if (!crit.criteria.search(rowData, rowIdx)) {
-	                return false;
-	            }
-	        }
-	        // If we get to here then everything has passed, so return true for the group
-	        return true;
-	    };
-	    /**
-	     * Checks And the criteria using OR logic
-	     * @param rowData The row data to be checked against the search criteria
-	     * @returns boolean The result of the OR search
-	     */
-	    Group.prototype._orSearch = function (rowData, rowIdx) {
-	        // If there are no criteria in the group then return true
-	        if (this.s.criteria.length === 0) {
-	            return true;
-	        }
-	        // This will check to make sure that at least one criteria in the group is complete
-	        var filledfound = false;
-	        for (var _i = 0, _a = this.s.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            if (crit.criteria instanceof Criteria && crit.criteria.s.filled) {
-	                // A completed criteria has been found so set the flag
-	                filledfound = true;
-	                // If the search passes then return true
-	                if (crit.criteria.search(rowData, rowIdx)) {
-	                    return true;
-	                }
-	            }
-	            else if (crit.criteria instanceof Group && crit.criteria.checkFilled()) {
-	                filledfound = true;
-	                if (crit.criteria.search(rowData, rowIdx)) {
-	                    return true;
-	                }
-	            }
-	        }
-	        // If we get here we need to return the inverse of filledfound,
-	        //  as if any have been found and we are here then none have passed
-	        return !filledfound;
-	    };
-	    /**
-	     * Removes a criteria from the group
-	     * @param criteria The criteria instance to be removed
-	     */
-	    Group.prototype._removeCriteria = function (criteria, group) {
-	        if (group === void 0) { group = false; }
-	        // If removing a criteria and there is only then then just destroy the group
-	        if (this.s.criteria.length <= 1 && this.s.isChild) {
-	            this.destroy();
-	        }
-	        else {
-	            // Otherwise splice the given criteria out and redo the indexes
-	            var last = void 0;
-	            for (var i = 0; i < this.s.criteria.length; i++) {
-	                if (this.s.criteria[i].index === criteria.s.index && (!group || this.s.criteria[i].criteria instanceof Group)) {
-	                    last = i;
-	                }
-	            }
-	            // We want to remove the last element with the desired index, as its replacement will be inserted before it
-	            if (last !== undefined) {
-	                this.s.criteria.splice(last, 1);
-	            }
-	            for (var i = 0; i < this.s.criteria.length; i++) {
-	                this.s.criteria[i].index = i;
-	                this.s.criteria[i].criteria.s.index = i;
-	            }
-	        }
-	    };
-	    /**
-	     * Sets the listeners in group for a criteria
-	     * @param criteria The criteria for the listeners to be set on
-	     */
-	    Group.prototype._setCriteriaListeners = function (criteria) {
-	        var _this = this;
-	        $$1(criteria.dom["delete"])
-	            .unbind('click')
-	            .on('click', function () {
-	            _this._removeCriteria(criteria);
-	            $$1(criteria.dom.container).remove();
-	            for (var _i = 0, _a = _this.s.criteria; _i < _a.length; _i++) {
-	                var crit = _a[_i];
-	                if (crit.criteria instanceof Criteria) {
-	                    crit.criteria.updateArrows(_this.s.criteria.length > 1);
-	                }
-	            }
-	            criteria.destroy();
-	            _this.s.dt.draw();
-	            $$1(_this.s.topGroup).trigger('dtsb-redrawContents');
-	            $$1(_this.s.topGroup).trigger('dtsb-updateTitle');
-	            return false;
-	        });
-	        $$1(criteria.dom.right)
-	            .unbind('click')
-	            .on('click', function () {
-	            var idx = criteria.s.index;
-	            var group = new Group(_this.s.dt, _this.s.opts, _this.s.topGroup, criteria.s.index, true, _this.s.depth + 1);
-	            // Add the criteria that is to be moved to the new group
-	            group.addCriteria(criteria);
-	            // Update the details in the current groups criteria array
-	            _this.s.criteria[idx].criteria = group;
-	            _this.s.criteria[idx].logic = 'AND';
-	            $$1(_this.s.topGroup).trigger('dtsb-redrawContents');
-	            _this._setGroupListeners(group);
-	            return false;
-	        });
-	        $$1(criteria.dom.left)
-	            .unbind('click')
-	            .on('click', function () {
-	            _this.s.toDrop = new Criteria(_this.s.dt, _this.s.opts, _this.s.topGroup, criteria.s.index);
-	            _this.s.toDrop.s = criteria.s;
-	            _this.s.toDrop.c = criteria.c;
-	            _this.s.toDrop.classes = criteria.classes;
-	            _this.s.toDrop.populate();
-	            // The dropCriteria event mutates the reference to the index so need to store it
-	            var index = _this.s.toDrop.s.index;
-	            $$1(_this.dom.container).trigger('dtsb-dropCriteria');
-	            criteria.s.index = index;
-	            _this._removeCriteria(criteria);
-	            // By tracking the top level group we can directly trigger a redraw on it,
-	            //  bubbling is also possible, but that is slow with deep levelled groups
-	            $$1(_this.s.topGroup).trigger('dtsb-redrawContents');
-	            _this.s.dt.draw();
-	            return false;
-	        });
-	    };
-	    /**
-	     * Set's the listeners for the group clear button
-	     */
-	    Group.prototype._setClearListener = function () {
-	        var _this = this;
-	        $$1(this.dom.clear)
-	            .unbind('click')
-	            .on('click', function () {
-	            if (!_this.s.isChild) {
-	                $$1(_this.dom.container).trigger('dtsb-clearContents');
-	                return false;
-	            }
-	            _this.destroy();
-	            $$1(_this.s.topGroup).trigger('dtsb-updateTitle');
-	            $$1(_this.s.topGroup).trigger('dtsb-redrawContents');
-	            return false;
-	        });
-	    };
-	    /**
-	     * Sets listeners for sub groups of this group
-	     * @param group The sub group that the listeners are to be set on
-	     */
-	    Group.prototype._setGroupListeners = function (group) {
-	        var _this = this;
-	        // Set listeners for the new group
-	        $$1(group.dom.add)
-	            .unbind('click')
-	            .on('click', function () {
-	            _this.setupLogic();
-	            $$1(_this.dom.container).trigger('dtsb-add');
-	            return false;
-	        });
-	        $$1(group.dom.container)
-	            .unbind('dtsb-add')
-	            .on('dtsb-add', function () {
-	            _this.setupLogic();
-	            $$1(_this.dom.container).trigger('dtsb-add');
-	            return false;
-	        });
-	        $$1(group.dom.container)
-	            .unbind('dtsb-destroy')
-	            .on('dtsb-destroy', function () {
-	            _this._removeCriteria(group, true);
-	            $$1(group.dom.container).remove();
-	            _this.setupLogic();
-	            return false;
-	        });
-	        $$1(group.dom.container)
-	            .unbind('dtsb-dropCriteria')
-	            .on('dtsb-dropCriteria', function () {
-	            var toDrop = group.s.toDrop;
-	            toDrop.s.index = group.s.index;
-	            toDrop.updateArrows(_this.s.criteria.length > 1, false);
-	            _this.addCriteria(toDrop, false);
-	            return false;
-	        });
-	        group.setListeners();
-	    };
-	    /**
-	     * Sets up the Group instance, setting listeners and appending elements
-	     */
-	    Group.prototype._setup = function () {
-	        this.setListeners();
-	        $$1(this.dom.add).text(this.s.dt.i18n('searchBuilder.add', this.c.i18n.add));
-	        $$1(this.dom.logic).text(this.c.logic === 'OR'
-	            ? this.s.dt.i18n('searchBuilder.logicOr', this.c.i18n.logicOr)
-	            : this.s.dt.i18n('searchBuilder.logicAnd', this.c.i18n.logicAnd));
-	        this.s.logic = this.c.logic === 'OR' ? 'OR' : 'AND';
-	        if (this.c.greyscale) {
-	            $$1(this.dom.logic).addClass(this.classes.greyscale);
-	        }
-	        $$1(this.dom.logicContainer).append(this.dom.logic).append(this.dom.clear);
-	        // Only append the logic button immediately if this is a sub group,
-	        //  otherwise it will be prepended later when adding a criteria
-	        if (this.s.isChild) {
-	            $$1(this.dom.container).append(this.dom.logicContainer);
-	        }
-	        $$1(this.dom.container).append(this.dom.add);
-	    };
-	    /**
-	     * Sets the listener for the logic button
-	     */
-	    Group.prototype._setLogicListener = function () {
-	        var _this = this;
-	        $$1(this.dom.logic)
-	            .unbind('click')
-	            .on('click', function () {
-	            _this._toggleLogic();
-	            _this.s.dt.draw();
-	            for (var _i = 0, _a = _this.s.criteria; _i < _a.length; _i++) {
-	                var crit = _a[_i];
-	                crit.criteria.setListeners();
-	            }
-	        });
-	    };
-	    /**
-	     * Toggles the logic for the group
-	     */
-	    Group.prototype._toggleLogic = function () {
-	        if (this.s.logic === 'OR') {
-	            this.s.logic = 'AND';
-	            $$1(this.dom.logic).text(this.s.dt.i18n('searchBuilder.logicAnd', this.c.i18n.logicAnd));
-	        }
-	        else if (this.s.logic === 'AND') {
-	            this.s.logic = 'OR';
-	            $$1(this.dom.logic).text(this.s.dt.i18n('searchBuilder.logicOr', this.c.i18n.logicOr));
-	        }
-	    };
-	    Group.version = '1.0.0';
-	    Group.classes = {
-	        add: 'dtsb-add',
-	        button: 'dtsb-button',
-	        clearGroup: 'dtsb-clearGroup',
-	        greyscale: 'dtsb-greyscale',
-	        group: 'dtsb-group',
-	        inputButton: 'dtsb-iptbtn',
-	        logic: 'dtsb-logic',
-	        logicContainer: 'dtsb-logicContainer'
-	    };
-	    Group.defaults = {
-	        columns: true,
-	        conditions: {
-	            'date': Criteria.dateConditions,
-	            'html': Criteria.stringConditions,
-	            'html-num': Criteria.numConditions,
-	            'html-num-fmt': Criteria.numFmtConditions,
-	            'moment': Criteria.momentDateConditions,
-	            'num': Criteria.numConditions,
-	            'num-fmt': Criteria.numFmtConditions,
-	            'string': Criteria.stringConditions
-	        },
-	        depthLimit: false,
-	        filterChanged: undefined,
-	        greyscale: false,
-	        i18n: {
-	            add: 'Add Condition',
-	            button: {
-	                0: 'Search Builder',
-	                _: 'Search Builder (%d)'
-	            },
-	            clearAll: 'Clear All',
-	            condition: 'Condition',
-	            data: 'Data',
-	            deleteTitle: 'Delete filtering rule',
-	            leftTitle: 'Outdent criteria',
-	            logicAnd: 'And',
-	            logicOr: 'Or',
-	            rightTitle: 'Indent criteria',
-	            title: {
-	                0: 'Custom Search Builder',
-	                _: 'Custom Search Builder (%d)'
-	            },
-	            value: 'Value',
-	            valueJoiner: 'and'
-	        },
-	        logic: 'AND',
-	        orthogonal: {
-	            display: 'display',
-	            search: 'filter'
-	        },
-	        preDefined: false
-	    };
-	    return Group;
-	}());
-
-	var $$2;
-	var DataTable$2;
-	/**
-	 * Sets the value of jQuery for use in the file
-	 * @param jq the instance of jQuery to be set
-	 */
-	function setJQuery$2(jq) {
-	    $$2 = jq;
-	    DataTable$2 = jq.fn.DataTable;
-	}
-	/**
-	 * SearchBuilder class for DataTables.
-	 * Allows for complex search queries to be constructed and implemented on a DataTable
-	 */
-	var SearchBuilder = /** @class */ (function () {
-	    function SearchBuilder(builderSettings, opts) {
-	        var _this = this;
-	        // Check that the required version of DataTables is included
-	        if (!DataTable$2 || !DataTable$2.versionCheck || !DataTable$2.versionCheck('1.10.0')) {
-	            throw new Error('SearchBuilder requires DataTables 1.10 or newer');
-	        }
-	        var table = new DataTable$2.Api(builderSettings);
-	        this.classes = $$2.extend(true, {}, SearchBuilder.classes);
-	        // Get options from user
-	        this.c = $$2.extend(true, {}, SearchBuilder.defaults, opts);
-	        this.dom = {
-	            clearAll: $$2('<button type="button">' + table.i18n('searchBuilder.clearAll', this.c.i18n.clearAll) + '</button>')
-	                .addClass(this.classes.clearAll)
-	                .addClass(this.classes.button)
-	                .attr('type', 'button'),
-	            container: $$2('<div/>')
-	                .addClass(this.classes.container),
-	            title: $$2('<div/>')
-	                .addClass(this.classes.title),
-	            titleRow: $$2('<div/>')
-	                .addClass(this.classes.titleRow),
-	            topGroup: undefined
-	        };
-	        this.s = {
-	            dt: table,
-	            opts: opts,
-	            search: undefined,
-	            topGroup: undefined
-	        };
-	        // If searchbuilder is already defined for this table then return
-	        if (table.settings()[0]._searchBuilder !== undefined) {
-	            return;
-	        }
-	        table.settings()[0]._searchBuilder = this;
-	        // Run the remaining setup when the table is initialised
-	        if (this.s.dt.settings()[0]._bInitComplete) {
-	            this._setUp();
-	        }
-	        else {
-	            table.one('init.dt', function () {
-	                _this._setUp();
-	            });
-	        }
-	        return this;
-	    }
-	    /**
-	     * Gets the details required to rebuild the SearchBuilder as it currently is
-	     */
-	    SearchBuilder.prototype.getDetails = function () {
-	        return this.s.topGroup.getDetails();
-	    };
-	    /**
-	     * Getter for the node of the container for the searchBuilder
-	     * @returns JQuery<HTMLElement> the node of the container
-	     */
-	    SearchBuilder.prototype.getNode = function () {
-	        return this.dom.container;
-	    };
-	    /**
-	     * Rebuilds the SearchBuilder to a state that is provided
-	     * @param details The details required to perform a rebuild
-	     */
-	    SearchBuilder.prototype.rebuild = function (details) {
-	        $$2(this.dom.clearAll).click();
-	        // If there are no details to rebuild then return
-	        if (details === undefined || details === null) {
-	            return this;
-	        }
-	        this.s.topGroup.rebuild(details);
-	        this.s.dt.draw();
-	        this.s.topGroup.setListeners();
-	        return this;
-	    };
-	    /**
-	     * Applies the defaults to preDefined criteria
-	     * @param preDef the array of criteria to be processed.
-	     */
-	    SearchBuilder.prototype._applyPreDefDefaults = function (preDef) {
-	        var _this = this;
-	        if (preDef.criteria !== undefined && preDef.logic === undefined) {
-	            preDef.logic = 'AND';
-	        }
-	        var _loop_1 = function (crit) {
-	            // Apply the defaults to any further criteria
-	            if (crit.criteria !== undefined) {
-	                crit = this_1._applyPreDefDefaults(crit);
-	            }
-	            else {
-	                this_1.s.dt.columns().every(function (index) {
-	                    if (_this.s.dt.settings()[0].aoColumns[index].sTitle === crit.data) {
-	                        crit.dataIdx = index;
-	                    }
-	                });
-	            }
-	        };
-	        var this_1 = this;
-	        for (var _i = 0, _a = preDef.criteria; _i < _a.length; _i++) {
-	            var crit = _a[_i];
-	            _loop_1(crit);
-	        }
-	        return preDef;
-	    };
-	    /**
-	     * Set's up the SearchBuilder
-	     */
-	    SearchBuilder.prototype._setUp = function (loadState) {
-	        var _this = this;
-	        if (loadState === void 0) { loadState = true; }
-	        this.s.topGroup = new Group(this.s.dt, this.c, undefined);
-	        this._setClearListener();
-	        this.s.dt.on('stateSaveParams', function (e, settings, data) {
-	            data.searchBuilder = _this.getDetails();
-	            data.page = _this.s.dt.page();
-	        });
-	        this._build();
-	        if (loadState) {
-	            var loadedState = this.s.dt.state.loaded();
-	            // If the loaded State is not null rebuild based on it for statesave
-	            if (loadedState !== null && loadedState.searchBuilder !== undefined) {
-	                this.s.topGroup.rebuild(loadedState.searchBuilder);
-	                $$2(this.s.topGroup.dom.container).trigger('dtsb-redrawContents');
-	                this.s.dt.page(loadedState.page).draw('page');
-	                this.s.topGroup.setListeners();
-	            }
-	            // Otherwise load any predefined options
-	            else if (this.c.preDefined !== false) {
-	                this.c.preDefined = this._applyPreDefDefaults(this.c.preDefined);
-	                this.rebuild(this.c.preDefined);
-	            }
-	        }
-	        this._setEmptyListener();
-	        this.s.dt.state.save();
-	    };
-	    /**
-	     * Updates the title of the SearchBuilder
-	     * @param count the number of filters in the SearchBuilder
-	     */
-	    SearchBuilder.prototype._updateTitle = function (count) {
-	        $$2(this.dom.title).text(this.s.dt.i18n('searchBuilder.title', this.c.i18n.title, count));
-	    };
-	    /**
-	     * Builds all of the dom elements together
-	     */
-	    SearchBuilder.prototype._build = function () {
-	        var _this = this;
-	        // Empty and setup the container
-	        $$2(this.dom.clearAll).remove();
-	        $$2(this.dom.container).empty();
-	        var count = this.s.topGroup.count();
-	        this._updateTitle(count);
-	        $$2(this.dom.titleRow).append(this.dom.title);
-	        $$2(this.dom.container).append(this.dom.titleRow);
-	        this.dom.topGroup = this.s.topGroup.getNode();
-	        $$2(this.dom.container).append(this.dom.topGroup);
-	        this._setRedrawListener();
-	        var tableNode = this.s.dt.table(0).node();
-	        if ($$2.fn.dataTable.ext.search.indexOf(this.s.search) === -1) {
-	            // Custom search function for SearchBuilder
-	            this.s.search = function (settings, searchData, dataIndex, origData) {
-	                if (settings.nTable !== tableNode) {
-	                    return true;
-	                }
-	                return _this.s.topGroup.search(searchData, dataIndex);
-	            };
-	            // Add SearchBuilder search function to the dataTables search array
-	            $$2.fn.dataTable.ext.search.push(this.s.search);
-	        }
-	        // Register an Api method for getting the column type
-	        $$2.fn.DataTable.Api.registerPlural('columns().type()', 'column().type()', function (selector, opts) {
-	            return this.iterator('column', function (settings, column) {
-	                return settings.aoColumns[column].sType;
-	            }, 1);
-	        });
-	        this.s.dt.on('destroy.dt', function () {
-	            $$2(_this.dom.container).remove();
-	            $$2(_this.dom.clearAll).remove();
-	            var searchIdx = $$2.fn.dataTable.ext.search.indexOf(_this.s.search);
-	            while (searchIdx !== -1) {
-	                $$2.fn.dataTable.ext.search.splice(searchIdx, 1);
-	                searchIdx = $$2.fn.dataTable.ext.search.indexOf(_this.s.search);
-	            }
-	        });
-	    };
-	    /**
-	     * Checks if the clearAll button should be added or not
-	     */
-	    SearchBuilder.prototype._checkClear = function () {
-	        if (this.s.topGroup.s.criteria.length > 0) {
-	            $$2(this.dom.clearAll).insertAfter(this.dom.title);
-	            this._setClearListener();
-	        }
-	        else {
-	            $$2(this.dom.clearAll).remove();
-	        }
-	    };
-	    /**
-	     * Update the count in the title/button
-	     * @param count Number of filters applied
-	     */
-	    SearchBuilder.prototype._filterChanged = function (count) {
-	        var fn = this.c.filterChanged;
-	        if (typeof fn === 'function') {
-	            fn(count, this.s.dt.i18n('searchBuilder.button', this.c.i18n.button, count));
-	        }
-	    };
-	    /**
-	     * Set the listener for the clear button
-	     */
-	    SearchBuilder.prototype._setClearListener = function () {
-	        var _this = this;
-	        $$2(this.dom.clearAll).unbind('click');
-	        $$2(this.dom.clearAll).on('click', function () {
-	            _this.s.topGroup = new Group(_this.s.dt, _this.c, undefined);
-	            _this._build();
-	            _this.s.dt.draw();
-	            _this.s.topGroup.setListeners();
-	            $$2(_this.dom.clearAll).remove();
-	            _this._setEmptyListener();
-	            _this._filterChanged(0);
-	            return false;
-	        });
-	    };
-	    /**
-	     * Set the listener for the Redraw event
-	     */
-	    SearchBuilder.prototype._setRedrawListener = function () {
-	        var _this = this;
-	        $$2(this.s.topGroup.dom.container).unbind('dtsb-redrawContents');
-	        $$2(this.s.topGroup.dom.container).on('dtsb-redrawContents', function () {
-	            _this._checkClear();
-	            _this.s.topGroup.redrawContents();
-	            _this.s.topGroup.setupLogic();
-	            _this._setEmptyListener();
-	            var count = _this.s.topGroup.count();
-	            _this._updateTitle(count);
-	            _this._filterChanged(count);
-	            _this.s.dt.state.save();
-	        });
-	        $$2(this.s.topGroup.dom.container).unbind('dtsb-clearContents');
-	        $$2(this.s.topGroup.dom.container).on('dtsb-clearContents', function () {
-	            _this._setUp(false);
-	            _this._filterChanged(0);
-	            _this.s.dt.draw();
-	        });
-	        $$2(this.s.topGroup.dom.container).on('dtsb-updateTitle', function () {
-	            var count = _this.s.topGroup.count();
-	            _this._updateTitle(count);
-	            _this._filterChanged(count);
-	        });
-	    };
-	    /**
-	     * Sets listeners to check whether clearAll should be added or removed
-	     */
-	    SearchBuilder.prototype._setEmptyListener = function () {
-	        var _this = this;
-	        $$2(this.s.topGroup.dom.add).on('click', function () {
-	            _this._checkClear();
-	        });
-	        $$2(this.s.topGroup.dom.container).on('dtsb-destroy', function () {
-	            $$2(_this.dom.clearAll).remove();
-	        });
-	    };
-	    SearchBuilder.version = '1.0.1';
-	    SearchBuilder.classes = {
-	        button: 'dtsb-button',
-	        clearAll: 'dtsb-clearAll',
-	        container: 'dtsb-searchBuilder',
-	        inputButton: 'dtsb-iptbtn',
-	        title: 'dtsb-title',
-	        titleRow: 'dtsb-titleRow'
-	    };
-	    SearchBuilder.defaults = {
-	        columns: true,
-	        conditions: {
-	            'date': Criteria.dateConditions,
-	            'html': Criteria.stringConditions,
-	            'html-num': Criteria.numConditions,
-	            'html-num-fmt': Criteria.numFmtConditions,
-	            'moment': Criteria.momentDateConditions,
-	            'num': Criteria.numConditions,
-	            'num-fmt': Criteria.numFmtConditions,
-	            'string': Criteria.stringConditions
-	        },
-	        depthLimit: false,
-	        filterChanged: undefined,
-	        greyscale: false,
-	        i18n: {
-	            add: 'Add Condition',
-	            button: {
-	                0: 'Search Builder',
-	                _: 'Search Builder (%d)'
-	            },
-	            clearAll: 'Clear All',
-	            condition: 'Condition',
-	            conditions: {
-	                array: {
-	                    contains: 'Contains',
-	                    empty: 'Empty',
-	                    equals: 'Equals',
-	                    not: 'Not',
-	                    notEmpty: 'Not Empty',
-	                    without: 'Without'
-	                },
-	                date: {
-	                    after: 'After',
-	                    before: 'Before',
-	                    between: 'Between',
-	                    empty: 'Empty',
-	                    equals: 'Equals',
-	                    not: 'Not',
-	                    notBetween: 'Not Between',
-	                    notEmpty: 'Not Empty'
-	                },
-	                moment: {
-	                    after: 'After',
-	                    before: 'Before',
-	                    between: 'Between',
-	                    empty: 'Empty',
-	                    equals: 'Equals',
-	                    not: 'Not',
-	                    notBetween: 'Not Between',
-	                    notEmpty: 'Not Empty'
-	                },
-	                number: {
-	                    between: 'Between',
-	                    empty: 'Empty',
-	                    equals: 'Equals',
-	                    gt: 'Greater Than',
-	                    gte: 'Greater Than Equal To',
-	                    lt: 'Less Than',
-	                    lte: 'Less Than Equal To',
-	                    not: 'Not',
-	                    notBetween: 'Not Between',
-	                    notEmpty: 'Not Empty'
-	                },
-	                string: {
-	                    contains: 'Contains',
-	                    empty: 'Empty',
-	                    endsWith: 'Ends With',
-	                    equals: 'Equals',
-	                    not: 'Not',
-	                    notEmpty: 'Not Empty',
-	                    startsWith: 'Starts With'
-	                }
-	            },
-	            data: 'Data',
-	            deleteTitle: 'Delete filtering rule',
-	            leftTitle: 'Outdent criteria',
-	            logicAnd: 'And',
-	            logicOr: 'Or',
-	            rightTitle: 'Indent criteria',
-	            title: {
-	                0: 'Custom Search Builder',
-	                _: 'Custom Search Builder (%d)'
-	            },
-	            value: 'Value',
-	            valueJoiner: 'and'
-	        },
-	        logic: 'AND',
-	        orthogonal: {
-	            display: 'display',
-	            search: 'filter'
-	        },
-	        preDefined: false
-	    };
-	    return SearchBuilder;
-	}());
-
-	/*! SearchBuilder 1.0.1
-	 * ©2020 SpryMedia Ltd - datatables.net/license/mit
-	 */
-	// DataTables extensions common UMD. Note that this allows for AMD, CommonJS
-	// (with window and jQuery being allowed as parameters to the returned
-	// function) or just default browser loading.
-	(function (factory) {
-	    if (typeof define === 'function' && define.amd) {
-	        // AMD
-	        define(['jquery', 'datatables.net'], function ($) {
-	            return factory($, window, document);
-	        });
-	    }
-	    else if (typeof exports === 'object') {
-	        // CommonJS
-	        module.exports = function (root, $) {
-	            if (!root) {
-	                root = window;
-	            }
-	            if (!$ || !$.fn.dataTable) {
-	                $ = require('datatables.net')(root, $).$;
-	            }
-	            return factory($, root, root.document);
-	        };
-	    }
-	    else {
-	        // Browser - assume jQuery has already been loaded
-	        factory(window.jQuery, window, document);
-	    }
-	}(function ($, window, document) {
-	    setJQuery$2($);
-	    setJQuery$1($);
-	    setJQuery($);
-	    var DataTable = $.fn.dataTable;
-	    $.fn.dataTable.SearchBuilder = SearchBuilder;
-	    $.fn.DataTable.SearchBuilder = SearchBuilder;
-	    $.fn.dataTable.Group = Group;
-	    $.fn.DataTable.Group = Group;
-	    $.fn.dataTable.Criteria = Criteria;
-	    $.fn.DataTable.Criteria = Criteria;
-	    var apiRegister = $.fn.dataTable.Api.register;
-	    // Set up object for plugins
-	    $.fn.dataTable.ext.searchBuilder = {
-	        conditions: {}
-	    };
-	    $.fn.dataTable.ext.buttons.searchBuilder = {
-	        action: function (e, dt, node, config) {
-	            e.stopPropagation();
-	            this.popover(config._searchBuilder.getNode(), {
-	                align: 'dt-container'
-	            });
-	        },
-	        config: {},
-	        init: function (dt, node, config) {
-	            var sb = new $.fn.dataTable.SearchBuilder(dt, $.extend({
-	                filterChanged: function (count, text) {
-	                    dt.button(node).text(text);
-	                }
-	            }, config.config));
-	            dt.button(node).text(config.text || dt.i18n('searchBuilder.button', sb.c.i18n.button, 0));
-	            config._searchBuilder = sb;
-	        },
-	        text: null
-	    };
-	    apiRegister('searchBuilder.getDetails()', function () {
-	        var ctx = this.context[0];
-	        return ctx._searchBuilder.getDetails();
-	    });
-	    apiRegister('searchBuilder.rebuild()', function (details) {
-	        var ctx = this.context[0];
-	        ctx._searchBuilder.rebuild(details);
-	        return this;
-	    });
-	    apiRegister('searchBuilder.container()', function () {
-	        var ctx = this.context[0];
-	        return ctx._searchBuilder.getNode();
-	    });
-	    /**
-	     * Init function for SearchBuilder
-	     * @param settings the settings to be applied
-	     * @param options the options for SearchBuilder
-	     * @returns JQUERY<HTMLElement> Returns the node of the SearchBuilder
-	     */
-	    function _init(settings, options) {
-	        var api = new DataTable.Api(settings);
-	        var opts = options
-	            ? options
-	            : api.init().searchBuilder || DataTable.defaults.searchBuilder;
-	        var searchBuilder = new SearchBuilder(api, opts);
-	        var node = searchBuilder.getNode();
-	        return node;
-	    }
-	    // Attach a listener to the document which listens for DataTables initialisation
-	    // events so we can automatically initialise
-	    $(document).on('preInit.dt.dtsp', function (e, settings, json) {
-	        if (e.namespace !== 'dt') {
-	            return;
-	        }
-	        if (settings.oInit.searchBuilder ||
-	            DataTable.defaults.searchBuilder) {
-	            if (!settings._searchBuilder) {
-	                _init(settings);
-	            }
-	        }
-	    });
-	    // DataTables `dom` feature option
-	    DataTable.ext.feature.push({
-	        cFeature: 'Q',
-	        fnInit: _init
-	    });
-	    // DataTables 2 layout feature
-	    if (DataTable.ext.features) {
-	        DataTable.ext.features.register('searchBuilder', _init);
-	    }
-	}));
-
-}());
-
-
-/*! SearchBuilder 1.0.1
- * ©2020 SpryMedia Ltd - datatables.net/license/mit
- */
-(function () {
-    'use strict';
-
-    (function (factory) {
-        if (typeof define === 'function' && define.amd) {
-            // AMD
-            define(['jquery', 'datatables.net-dt', 'datatables.net-searchbuilder'], function ($) {
-                return factory($, window, document);
-            });
-        }
-        else if (typeof exports === 'object') {
-            // CommonJS
-            module.exports = function (root, $) {
-                if (!root) {
-                    root = window;
-                }
-                if (!$ || !$.fn.dataTable) {
-                    $ = require('datatables.net-dt')(root, $).$;
-                }
-                if (!$.fn.dataTable.searchBuilder) {
-                    require('datatables.net-searchbuilder')(root, $);
-                }
-                return factory($, root, root.document);
-            };
-        }
-        else {
-            // Browser
-            factory(jQuery, window, document);
-        }
-    }(function ($, window, document) {
-        var DataTable = $.fn.dataTable;
-        return DataTable.searchPanes;
-    }));
-
-}());
 
 
 /*! SearchPanes 1.2.2
@@ -26718,7 +22496,7 @@ return Scroller;
 (function (factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD
-        define(['jquery', 'datatables.net-dt', 'datatables.net-searchpanes'], function ($) {
+        define(['jquery', 'datatables.net-bs4', 'datatables.net-searchpanes'], function ($) {
             return factory($, window, document);
         });
     }
@@ -26729,9 +22507,11 @@ return Scroller;
                 root = window;
             }
             if (!$ || !$.fn.dataTable) {
-                $ = require('datatables.net-dt')(root, $).$;
+                $ = require('datatables.net-bs4')(root, $).$;
             }
+            console.log($.fn.dataTable);
             if (!$.fn.dataTable.SearchPanes) {
+                console.log("not present");
                 require('datatables.net-searchpanes')(root, $);
             }
             return factory($, root, root.document);
@@ -26744,6 +22524,31 @@ return Scroller;
 }(function ($, window, document) {
     'use strict';
     var DataTable = $.fn.dataTable;
+    $.extend(true, DataTable.SearchPane.classes, {
+        buttonGroup: 'btn-group col justify-content-end',
+        disabledButton: 'disabled',
+        dull: '',
+        narrow: 'col',
+        pane: {
+            container: 'table'
+        },
+        paneButton: 'btn btn-light',
+        pill: 'pill badge badge-pill badge-secondary',
+        search: 'col-sm form-control search',
+        searchCont: 'input-group col-sm',
+        searchLabelCont: 'input-group-append',
+        subRow1: 'dtsp-subRow1',
+        subRow2: 'dtsp-subRow2',
+        table: 'table table-sm table-borderless',
+        topRow: 'dtsp-topRow row'
+    });
+    $.extend(true, DataTable.SearchPanes.classes, {
+        clearAll: 'dtsp-clearAll col-auto btn btn-light',
+        container: 'dtsp-searchPanes',
+        panes: 'dtsp-panes dtsp-container',
+        title: 'dtsp-title col',
+        titleRow: 'dtsp-titleRow row'
+    });
     return DataTable.searchPanes;
 }));
 

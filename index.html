@@ -42,42 +42,64 @@
 	<body class="d-flex flex-column">
 		
 		<header>
-			<nav class="navbar bg-light">
+			<nav class="navbar navbar-expand-md navbar-light bg-light">
 				<div class="container-fluid">
-						
-						<div class="nav-item dropdown" id="tableSelectionDropdown">
-							<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false"></a>
-							<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-								<!-- items populated on page load -->
-							</ul>
-						</div>
-					
-						<div class="nav-item dropdown" id="recordsSelectionDropdown">
-							<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">Select</a>
-							<ul class="dropdown-menu" aria-labelledby="navbarDropdown" >
-								<li><a class="dropdown-item" id="selectAll">All</a></li>
-								<li><a class="dropdown-item" id="selectNone">None</a></li>
-								<li><a class="dropdown-item" id="selectInverse">Inverse</a></li>
-							</ul>
-						</div>
-							
-						<!-- below section (Columns, Filter and Add button) are only on Desktop -->
-						<div class="d-none d-md-block">
-							<button class="btn" 
-									id="colOrderPopoverTrigger"
+
+					<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+						<span class="navbar-toggler-icon"></span>
+				 	</button>
+
+					<div class="navbar-brand container-fluid order-md-2" id="searchBox">
+						<input class="form-control" type="search" placeholder="Search" aria-label="Search">
+					</div>
+
+					<div class="collapse navbar-collapse order-md-1" id="navbarSupportedContent">
+						<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+						  	<li class="nav-item dropdown" id="tableSelectionDropdown">
+								<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="bi bi-folder"></i>
+									<span>
+									<!-- text populated on page load -->
+									</span>
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+									<!-- <li> items populated on page load -->
+								</ul>
+						  	</li>
+						  	<li class="nav-item dropdown" id="recordsSelectionDropdown">
+								<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<i class="bi bi-check2-square"></i> Select
+								</a>
+								<ul class="dropdown-menu" aria-labelledby="navbarDropdown" >
+									<li><a class="dropdown-item" id="selectAll">All</a></li>
+									<li><a class="dropdown-item" id="selectNone">None</a></li>
+									<li><a class="dropdown-item" id="selectInverse">Inverse</a></li>
+								</ul>
+						  	</li>
+							<li class="nav-item">
+								<a class="nav-link" role="button" id="colOrderBtn"
 									data-bs-toggle="popover" 
 									data-bs-container="body" 
 									data-bs-placement="bottom">
-									<i class="bi bi-layout-sidebar-inset"></i> Columns</button>
-							<button class="btn" 
-									id="filterRecordsBtnD" 
-									title="Filter Records">
-									<i class="bi-filter-square"></i> Filter</button>
-							<button class="btn"
-									id="addRecordBtnD" 
-									title="Add Record">
-									<i class="bi bi-plus-square"></i> Add</button>
-						</div>
+									<i class="bi bi-layout-sidebar-inset"></i> Columns
+								</a>
+							</li>
+						</ul>
+					</div>
+				
+					<!-- below section (Columns, Filter and Add button) are only on Desktop -->
+					<form class="d-none d-md-flex flex-nowrap order-3">
+						<button class="btn"
+								type="button"
+								id="filterRecordsBtnD" 
+								title="Filter Records">
+								<i class="bi-filter-square"></i> Filter</button>
+						<button class="btn"
+								type="button"
+								id="addRecordBtnD" 
+								title="Add Record">
+								<i class="bi bi-plus-square"></i> Add</button>
+					</form>
 				</div>
 			</nav>
 		</header>
@@ -89,19 +111,16 @@
 			<div class="container" id="sub-footer">
 				<!-- below section only for Mobile -->
 				<div class="container d-md-none d-flex justify-content-evenly">
-					<button class="btn d-none" 
+					<button class="btn btn-sm d-none" 
 						id="showRecordsBtnM" 
 						title="Show Records"><i class="bi bi-eye"></i><br>Show</button>
-					<button class="btn" 
-						id="colOrderBtnM" 
-						title="Columns order"><i class="bi bi-layout-sidebar-inset"></i><br>Columns</button>
-					<button class="btn" 
+					<button class="btn btn-sm" 
 						id="sortRecordsBtnM" 
 						title="Sort Records"><i class="bi bi-sort-down"></i><br>Sort</button>
-					<button class="btn" 
+					<button class="btn btn-sm" 
 						id="filterRecordsBtnM" 
 						title="Filter Records"><i class="bi-filter-square"></i><br>Filter</button>
-					<button class="btn" 
+					<button class="btn btn-sm" 
 						id="addRecordBtnM" 
 						title="Add Record"><i class="bi bi-plus-square"></i><br>Add</button>
 				</div>
@@ -143,54 +162,11 @@
 
 		<footer class="footer bg-light">
 			<div class="container-fluid text-center">
-				<span class="text-muted">&copy; Sławomir Blok 2021</span>
+				<span class="text-muted small">&copy; Sławomir Blok 2021</span>
 			</div>
 		</footer>
 
 		<div id="preloader">
-		</div>
-
-		<!-- Popover for Desktop to show columns ordering options -->
-		<div class="d-none" id="colOrderAtDesktop">
-			<div class="container">
-				<div class="row justify-content-between">
-					<div class="col-auto">
-						<h5>Columns order</h5>
-					</div>
-					<div class="col-auto">
-						<button type="button" class="btn-close"></button>
-					</div>
-				</div>
-				<div class="row">
-					<div class="col">
-						<ul class="list-group">
-							<!-- items populated by JavaScript -->
-						</ul>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Modal for Mobile to show columns ordering options -->
-		<div class="modal fade" id="colOrderAtMobile" tabindex="-1" aria-labelledby="colOrderModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="colOrderModalLabel">Columns order</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<div class="container">
-						<ul class="list-group">
-							<!-- items populated by JavaScript -->
-						</ul>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-				</div>
-			</div>
-			</div>
 		</div>
 
 		<!-- Modal for Mobile to display presons details -->
@@ -272,7 +248,7 @@
 						</select>
 					</div>
 					<div class="mb-3">
-						<label for="sortDirection" class="form-label">Direction:</label>
+						<label for="sortDirection" class="form-label">Order:</label>
 						<select class="form-select" id="sortDirection" aria-label="Order">
 							<option value="asc">Ascending</option>
 							<option value="desc">Descending</option>
@@ -285,6 +261,49 @@
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 					<button type="button" id="sortConfirmBtnM" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+				</div>
+			</div>
+			</div>
+		</div>
+
+		<!-- Popover for Desktop to show columns ordering options -->
+		<div class="d-none" id="colOrderAtDesktop">
+			<div class="container">
+				<div class="row justify-content-between">
+					<div class="col-auto">
+						<h5>Columns order</h5>
+					</div>
+					<div class="col-auto">
+						<button type="button" class="btn-close"></button>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col">
+						<ul class="list-group">
+							<!-- items populated by JavaScript -->
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal for Mobile to show columns ordering options -->
+		<div class="modal fade" id="colOrderAtMobile" tabindex="-1" aria-labelledby="colOrderModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="colOrderModalLabel">Columns order</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="container">
+						<ul class="list-group">
+							<!-- items populated by JavaScript -->
+						</ul>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 				</div>
 			</div>
 			</div>
