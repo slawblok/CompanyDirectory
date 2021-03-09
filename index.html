@@ -108,11 +108,11 @@
 		
 		<main class="flex-grow-1 d-flex flex-column">
 			<div class="container flex-grow-1 overflow-auto" id="content">
-				<!-- items populated by JavaScript -->
+				<!-- content populated by JavaScript -->
 			</div>
 			<div class="container" id="sub-footer">
 				<!-- below section only for Mobile -->
-				<div class="container d-md-none d-flex justify-content-evenly">
+				<div class="container d-md-none d-flex justify-content-evenly border-top">
 					<button class="btn btn-sm d-none" 
 						id="showRecordsBtnM" 
 						title="Show Records"><i class="bi bi-eye"></i><br>Show</button>
@@ -172,63 +172,181 @@
 		</div>
 
 		<!-- Modal for Mobile to display presons details -->
-		<div class="modal fade" id="personnelAtMobile" tabindex="-1" aria-labelledby="personModalLabel" aria-hidden="true">
+		<div class="modal fade recordDetails" id="personnelAtMobile" tabindex="-1" aria-labelledby="personModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="personModalLabel">Person details</h5>
+					<h5 class="modal-title"> <span></span> details</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					Record ID: <span id="recordId"></span><br>
-					First Name: <span id="firstName"></span><br>
-					Last Name: <span id="lastName"></span><br>
-					Job Title: <span id="jobTitle"></span><br>
-					E-mail: <span id="email"></span><br>
-					Department: <span id="department"></span><br>
-					Location: <span id="location"></span><br>
+					<div class="row">
+						<div class="col"></div>
+						<div class="col text-center">
+							<img src="vendors/bootstrap-icons/person.svg" width="70%" height="auto"/>
+						</div>
+						<div class="col text-end">
+							<label class="form-label text-muted">Record ID: <span id="recordId"></span></label>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col editable d-none">
+							<label class="form-label small fw-bold firstName"></label>
+							<input type="text" class="form-control text-center firstName">
+						</div>
+					</div>
+					<div class="row">
+						<div class="col editable d-none">
+							<label class="form-label small fw-bold lastName"></label>
+							<input type="text" class="form-control text-center lastName">
+						</div>
+					</div>
+					<div class="row">
+						<div class="col text-center fs-3 fw-bold preview">
+							<span class="firstName"></span>
+							<span class="lastName"></span>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold editable d-none jobTitle"></label>
+							<input type="text" class="form-control text-center jobTitle editable d-none">
+							<span class="text-center fst-italic jobTitle d-block preview"></span>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold email"></label>
+							<input type="email" class="form-control text-center email editable d-none">
+							<span class="border rounded-3 text-center email d-block preview"></span>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold department"></label>
+							<select class="form-select text-center editable department d-none" aria-label="department">
+								<!-- options populated by javascript-->
+							</select>
+							<span class="border rounded-3 text-center department d-block preview"></span>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold location"></label>
+							<span class="border rounded-3 text-center location d-block"></span>
+						</div>
+					</div>
+					<div class="row mt-5">
+						<div class="col d-grid gap-2 d-flex justify-content-center">
+							<button type="button" class="btn btn-sm btn-danger deleteBtn d-none">Delete record</button>
+							<button type="button" class="btn btn-sm btn-primary duplicateBtn">Duplicate record</button>
+						</div>
+					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<div class="container-fluid alert alert-info d-none" role="alert">
+						You had not made any changes to selected records.
+					</div>
+					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+					<button type="button" class="btn btn-primary editBtn">Edit</button>
+					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
 			</div>
 		</div>
 
 		<!-- Modal for Mobile to display department details -->
-		<div class="modal fade" id="departmentAtMobile" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
+		<div class="modal fade recordDetails" id="departmentAtMobile" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="departmentModalLabel">Department details</h5>
+					<h5 class="modal-title"> <span></span> details</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					Record ID: <span id="recordId"></span><br>
-					Name: <span id="name"></span><br>
-					Location: <span id="location"></span><br>
+					<div class="row">
+						<div class="col"></div>
+						<div class="col text-center">
+							<img src="vendors/bootstrap-icons/building.svg" width="70%" height="auto"/>
+						</div>
+						<div class="col text-end">
+							<label class="form-label text-muted">Record ID: <span id="recordId"></span></label>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold name"></label>
+							<input type="text" class="form-control text-center name editable d-none">
+							<span class="border rounded-3 text-center name d-block preview"></span>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold location"></label>
+							<select class="form-select text-center editable location d-none" aria-label="location">
+								<!-- options populated by javascript-->
+							</select>
+							<span class="border rounded-3 text-center location d-block preview"></span>
+						</div>
+					</div>
+					<div class="row mt-5">
+						<div class="col d-grid gap-2 d-flex justify-content-center">
+							<button type="button" class="btn btn-sm btn-danger deleteBtn d-none">Delete record</button>
+							<button type="button" class="btn btn-sm btn-primary duplicateBtn">Duplicate record</button>
+						</div>
+					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<div class="container-fluid alert alert-info d-none" role="alert">
+						You had not made any changes to selected records.
+					</div>
+					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+					<button type="button" class="btn btn-primary editBtn">Edit</button>
+					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
 			</div>
 		</div>
 
 		<!-- Modal for Mobile to display location details -->
-		<div class="modal fade" id="locationAtMobile" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+		<div class="modal fade recordDetails" id="locationAtMobile" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="locationModalLabel">Location details</h5>
+					<h5 class="modal-title"> <span></span> details</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					Record ID: <span id="recordId"></span><br>
-					Name: <span id="name"></span><br>
+					<div class="row">
+						<div class="col"></div>
+						<div class="col text-center">
+							<img src="vendors/bootstrap-icons/geo-alt.svg" width="70%" height="auto"/>
+						</div>
+						<div class="col text-end">
+							<label class="form-label text-muted">Record ID: <span id="recordId"></span></label>
+						</div>
+					</div>
+					<div class="row mb-3">
+						<div class="col">
+							<label class="form-label small fw-bold name"></label>
+							<input type="text" class="form-control text-center name editable d-none">
+							<span class="border rounded-3 text-center name d-block preview"></span>
+						</div>
+					</div>
+					<div class="row mt-5">
+						<div class="col d-grid gap-2 d-flex justify-content-center">
+							<button type="button" class="btn btn-sm btn-danger deleteBtn d-none">Delete record</button>
+							<button type="button" class="btn btn-sm btn-primary duplicateBtn">Duplicate record</button>
+						</div>
+					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<div class="container-fluid alert alert-info d-none" role="alert">
+						You had not made any changes to selected records.
+					</div>
+					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+					<button type="button" class="btn btn-primary editBtn">Edit</button>
+					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
 			</div>
@@ -323,6 +441,42 @@
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
+		</div>
+
+		<!-- Modal to show and confirm edited changes -->
+		<div class="modal fade" id="confirmEdited" tabindex="-1" aria-labelledby="confirmEditedModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="confirmEditedModalLabel">Confirmation</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="container">
+						<p>Are you sure to update <span class="number"></span> record(s) ?</p>
+						<div class="listOfChanges"></div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<div class="container-fluid alert alert-success d-none" role="alert">
+						All records updates succesfully.
+					</div>
+					<div class="container-fluid alert alert-warning d-none" role="alert">
+						Some records were not updated due to an error.<br>
+						You can try again.
+					</div>
+					<button type="button" 
+							class="btn btn-warning updateBtn">
+							<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+							Update
+						</button>
+					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
+					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
 				</div>
 			</div>
 			</div>

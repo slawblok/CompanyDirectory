@@ -12,7 +12,7 @@ var nameTranslations = {
 		}
 	},
 	department : {	// this key must match name in DB
-		displayName : 'Departments',
+		displayName : 'Department',
 		columnsList : {
 			// all below keys must match name in DB
 			name: 'Name',
@@ -20,7 +20,7 @@ var nameTranslations = {
 		}
 	},
 	location : {	// this key must match name in DB
-		displayName : 'Locations',
+		displayName : 'Location',
 		columnsList : {
 			// all below keys must match name in DB
 			name: 'Name'
@@ -28,32 +28,41 @@ var nameTranslations = {
 	},
 }
 
-var localRecords;
+// globa lvariables
 var dataTable;
+var selectedTable;
+var editedRecords;
 
 // ##############################################################################
 // #                        General section                                     # 
 // ##############################################################################
 
-function getRecords(selectedTable){
+function getRecords(requestedTable, target){
 	// request all records
 	$.ajax({
 		url: "php/getRecords.php",
-		type: 'POST',
+		type: 'GET',
 		dataType: 'json',
 		data: {
-			table: selectedTable
+			table: requestedTable
 		},	
 		success: function(response) {
-			localRecords = response;
-			displayRecordsList(localRecords);
+			switch (target) {
+				case 'toTable': {
+					selectedTable = requestedTable;
+					displayRecordsList(response);
+				} break;
+				case 'toSelectOptions': {
+					populateSelectOptions(response, requestedTable);
+				} break;
+			}
 		},
 		error: function(jqXHR, textStatus, errorThrown) {
 			console.log("request failed");
 			console.log(jqXHR);
 		}
 	});
-}
+};
 
 $(window).on('load', function () {
 
@@ -68,7 +77,7 @@ $(window).on('load', function () {
 	}
 	
 	// load default table
-	getRecords('personnel');
+	getRecords('personnel', 'toTable');
 
 	initiateColOrderPopover();
 	
@@ -82,8 +91,7 @@ $(window).on('load', function () {
 
 // action when user click to change the table
 $('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
-	var selectedTable = event.target.attributes.value.value;
-	getRecords(selectedTable);
+	getRecords(event.target.attributes.value.value, 'toTable');
 });
 
 // ##############################################################################
@@ -105,87 +113,89 @@ $('#locationAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDeskto
 
 $('#showRecordsBtnM').on('click', function() {
 	closeColOrderPopover();
-	var table = localRecords.table;
-	new bootstrap.Modal(document.getElementById(table+'AtMobile')).show();
+	displaySelectedRecordsDetails();
+	new bootstrap.Modal(document.getElementById(selectedTable+'AtMobile')).show();
 });
 
-function displaySelectedRecordsDetails(){
-
+function getSelectedRecords() {
 	// get selected records
 	var selectedRows = dataTable.rows( { selected: true } ).data();
 	var selectedRecords = [];
 	for (var i=0; i<selectedRows.length; i++) {
 		selectedRecords.push(selectedRows[i]);
 	}
+	return selectedRecords;
+}
+
+function displaySelectedRecordsDetails(){
+	
+	// get selected records
+	var selectedRecords = getSelectedRecords();
 	
 	// combine records if more than one selected
 	var recordCombined = {};
-	var messageForMultipleEntries = '...multiple entries...';
-	// copy first record as-is
+	var recordsDifferences = {};
+	// copy first record as-is and assume no differences
 	for (var key in selectedRecords[0]) {
+		recordsDifferences[key] = 'no';
 		recordCombined[key] = selectedRecords[0][key];
 	}
+	
 	// compare with remainings records
 	selectedRecords.forEach(function(selectedRecord) {
 		for (var key in selectedRecord) {
-			if (recordCombined[key] != messageForMultipleEntries) {
-				if (recordCombined[key] != selectedRecord[key]) {
-					recordCombined[key] = messageForMultipleEntries;
+			if (recordsDifferences[key] == 'no') {
+				if (selectedRecord[key] != recordCombined[key]) {
+					recordsDifferences[key] = 'yes';
+					switch(key) {
+						case 'id': {
+							recordCombined[key] = '#';
+						} break;
+						case 'email': {
+							recordCombined[key] = 'multiple@emails';
+						} break;
+						default: {
+							recordCombined[key] = 'multiple';
+						} break;
+					}
 				}
 			}
 		}
 	});
 
 	// update DOM with record details
-	var table = localRecords.table;
-	$('#'+table+'AtDesktop').children('#recordId').text(recordCombined.DT_RowId);
-	$('#'+table+'AtMobile .modal-content .modal-body').children('#recordId').text(recordCombined.DT_RowId);
-	Object.keys(nameTranslations[table]['columnsList']).forEach( (key, index) => {
-		var currentIndex = dataTable.colReorder.transpose( index );
-		var value = recordCombined[currentIndex];
-		$('#'+table+'AtDesktop').children('#'+key).text(value);
-		$('#'+table+'AtMobile .modal-content .modal-body').children('#'+key).text(value);
-	});
-
-	// show profile for Desktop
-	$('#'+table+'AtDesktop').addClass('d-md-block');
+	var desktopContainer = $('#'+selectedTable+'AtDesktop');
+	var mobileContainer = $('#'+selectedTable+'AtMobile');
 	
-	// show button for Mobile
-	$('#showRecordsBtnM').removeClass('d-none');
+	var recordName = nameTranslations[selectedTable].displayName;
+	desktopContainer.find('.modal-title span').text(recordName);
+	mobileContainer.find('.modal-title span').text(recordName);
 
-	recalculateContentHeight();
-}
+	var recordId = recordCombined.id;
+	desktopContainer.find('#recordId').text(recordId);
+	mobileContainer.find('#recordId').text(recordId);
 
-function generateTable(records) {
-	
-	// determine columns list
-	var columnsList = nameTranslations[records.table].columnsList;
-	
-	// define columns titles
-	var tableHead = $("<thead></thead>");
-	var columnsTitles = $("<tr></tr>");
+	var columnsList = nameTranslations[selectedTable].columnsList;
 	for (var key in columnsList) {
-		columnsTitles.append($("<th></th>").text(columnsList[key]).attr("scope", "col"));
+		var value = recordCombined[key];
+		var columnName = columnsList[key];
+		desktopContainer.find('input.'+key).val(value).attr('placeholder', columnName+' placeholder');
+		desktopContainer.find('span.'+key).text(value);
+		desktopContainer.find('label.'+key).text(columnName);
+		
+		mobileContainer.find('input.'+key).val(value).attr('placeholder', columnName+' placeholder');
+		mobileContainer.find('span.'+key).text(value);
+		mobileContainer.find('label.'+key).text(columnName);
 	};
-	tableHead.append(columnsTitles);
 
-	// define table body
-	var tableBody = $("<tbody></tbody>");
-	records.data.forEach(function(element) {
-		// define row
-		var row = $("<tr></tr>").attr('id', element.id);
-		// main data
-		for (var key in columnsList){
-			row.append($('<td></td>').text(element[key]));
-		}
-		tableBody.append(row);
-	});
-
-	// load head and body to table
-	var table = $("<table></table>").attr("class", "table table-hover");
-	table.append(tableHead);
-	table.append(tableBody);
-	return table;
+	if ('departmentID' in recordCombined) {
+		desktopContainer.find('span.'+'department').attr('id', recordCombined.departmentID);
+		mobileContainer.find('span.'+'department').attr('id', recordCombined.departmentID);
+	}
+	if ('locationID' in recordCombined) {
+		desktopContainer.find('span.'+'location').attr('id', recordCombined.locationID);
+		mobileContainer.find('span.'+'location').attr('id', recordCombined.locationID);
+	}
 }
 
 function displayRecordsList(records) {
@@ -196,14 +206,31 @@ function displayRecordsList(records) {
 	// hide button for Mobile
 	$('#showRecordsBtnM').addClass('d-none');
 
-	var table = generateTable(records);
+	// prepare columns list and table header for DataTable
+	var columns = [];
+	var columnsList = nameTranslations[selectedTable].columnsList;
+	var tableHead = $("<thead></thead>");
+	var columnsTitles = $("<tr></tr>");
+	for (var key in columnsList){
+		columns.push({'data': key});
+		columnsTitles.append($("<th></th>").text(columnsList[key]).attr("scope", "col"));
+	}
+	tableHead.append(columnsTitles);
+
+	// load head to table
+	var table = $("<table></table>").attr("class", "table table-hover");
+	table.append(tableHead);
 	$('#content').html('').append(table);
-	
+
+
 	// DataTable uses below extensions:
 	// - Responsive
 	// - ColReorder
 	// - Select
 	dataTable = $('#content > table').DataTable({
+		destroy: true,
+		data: records.data,
+		columns: columns,
 		paging: false,
 		scrollY: 300,
 		scrollX: false,
@@ -219,11 +246,23 @@ function displayRecordsList(records) {
 		searchPanes: true,
 		dom: 'lrtp'			// remove 'i' to stop displaying bottom infor
 	})
-	.on('select', displaySelectedRecordsDetails)
+	.on('select', function () {
+		displaySelectedRecordsDetails();
+		// show profile for Desktop
+		$('#'+selectedTable+'AtDesktop').addClass('d-md-block');
+		recalculateContentHeight();
+		// show button for Mobile
+		$('#showRecordsBtnM').removeClass('d-none');
+	})
 	.on('deselect', function (e, dt, type, indexes) {
 		// check if 1 or more 1 selected
 		if (dt.rows( { selected: true } ).data().length > 0) {
 			displaySelectedRecordsDetails();
+			// show profile for Desktop
+			$('#'+selectedTable+'AtDesktop').addClass('d-md-block');
+			recalculateContentHeight();
+			// show button for Mobile
+			$('#showRecordsBtnM').removeClass('d-none');
 		} else {
 			// hide modals, which shows record details at Desktop
 			cloaseRecordDetailsAtDesktop();
@@ -232,7 +271,7 @@ function displayRecordsList(records) {
 		}
 	});
 	
-	$('#tableSelectionDropdown > a > span').text(nameTranslations[records.table].displayName);
+	$('#tableSelectionDropdown > a > span').text(nameTranslations[selectedTable].displayName);
 }
 
 function getHeighConsumedByOtherElements(element) {
@@ -321,7 +360,7 @@ $('#navbarSupportedContent li.dropdown').on('shown.bs.dropdown',function() {
 	recalculateContentHeight();
 });
 
-$('#navbarSupportedContent  li.dropdown').on('hidden.bs.dropdown',function() {
+$('#navbarSupportedContent li.dropdown').on('hidden.bs.dropdown',function() {
 	recalculateContentHeight();
 });
 
@@ -571,7 +610,7 @@ $('#colOrderBtn').on('click', function() {
 })
 
 // ##############################################################################
-// #                             Filtering                                      # 
+// #                             Filtering                                      #
 // ##############################################################################
 
 $('#filterRecordsBtnD').on('click', function() {
@@ -583,3 +622,326 @@ $('#filterRecordsBtnD').on('click', function() {
 $('#filterRecordsBtnM').on('click', function() {
 	console.log('show filter option on mobile');
 });
+
+// ##############################################################################
+// #                                  Edit                                      #
+// ##############################################################################
+
+function recordDetailsToEditMode() {
+	var content = $('.recordDetails');
+	content.find('.editable').removeClass('d-none');
+	content.find('.preview').addClass('d-none');
+	content.find('.editBtn').addClass('d-none');
+	content.find('.confirmBtn').removeClass('d-none');
+	content.find('.duplicateBtn').addClass('d-none');
+	content.find('.deleteBtn').removeClass('d-none');
+}
+
+$('.recordDetails').find('.editBtn').on('click', function() {		
+	recordDetailsToEditMode();
+});
+
+function recordDetailsToPreviewMode() {
+	// configure record details modal to preview mode
+	var content = $('.recordDetails');
+	content.find('.preview').removeClass('d-none');
+	content.find('.editable').addClass('d-none');
+	content.find('.editBtn').removeClass('d-none');
+	content.find('.confirmBtn').addClass('d-none');
+	content.find('.duplicateBtn').removeClass('d-none');
+	content.find('.deleteBtn').addClass('d-none');
+}
+
+$('.recordDetails').on('hidden.bs.modal', function () {
+	recordDetailsToPreviewMode();
+});
+
+function populateSelectOptions(records, table) {
+	var select = $('select.'+table);
+	// clear any existing options
+	select.html('');
+	records.data.forEach(function(element) {
+		// define option
+		var option = $("<option></option>");
+		for (var key in element) {
+			// 'name' is displayed on the list for user
+			// 'id' goes as value of option
+			// other fields goes as attributes to option element
+			switch (key) {
+				case 'id': {
+					option.val(element[key]);
+				} break;
+				case 'name': {
+					option.text(element[key]);
+				} break;
+				default: {
+					option.attr(key, element[key]);
+				} break;
+			}
+		}
+		select.append(option);
+	});
+	// one more option is added to handle case, where more than one record is selected
+	// thus list should have 'multiple' option available to display only, but not to select by user
+	select.append($("<option></option>").val('multiple').text('multiple').addClass('d-none'));
+	select.val(select.next('span').attr('id'));
+}
+
+$('#departmentAtMobile, #departmentAtDesktop').find('.editBtn').on('click', function() {
+	getRecords('location', 'toSelectOptions');
+});
+
+$('#personnelAtMobile, personnelAtDesktop').find('.editBtn').on('click', function() {
+	getRecords('department', 'toSelectOptions');
+});
+
+$('select.department').change(function() {
+	var location = $(this).find(':selected').attr('location');
+	var locationId = $(this).find(':selected').attr('locationId');
+	var spanElement = $(this).closest('.recordDetails').find('span.location');
+	spanElement.text(location).attr('id', locationId);
+});
+
+function determineValue(originalValue, displayedValue, editedValue) {
+	if (displayedValue != editedValue) {
+		// user edited field of this record, thus new/edited value is taken
+		return editedValue;
+	} else {
+		// no edit occur; thus original value is taken
+		// this migh be different for each record if more than one selected
+		return originalValue;
+	}
+}
+
+$('#personnelAtMobile, personnelAtDesktop').find('.confirmBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	var selectedRecords = getSelectedRecords();
+	// read DOM to local variably
+	editedRecords = [];
+	selectedRecords.forEach (function (selectedRecord) {
+		var editedRecord = {};
+		// id remains unchanged
+		editedRecord['id'] = selectedRecord.id;
+		
+		// original value is value, which is currently is DB
+		var originalValue = selectedRecord.firstName;
+		// displayed value might differ from original value, when multiple records are selected
+		// then 'multiple' is displayed instead original value
+		var displayedValue = container.find('span.firstName').text();
+		// edited value is entered by the user
+		var editedValue = container.find('input.firstName').val();
+		editedRecord['firstName'] = determineValue(originalValue, displayedValue, editedValue);
+		
+		var originalValue = selectedRecord.lastName;
+		var displayedValue = container.find('span.lastName').text();
+		var editedValue = container.find('input.lastName').val();
+		editedRecord['lastName'] = determineValue(originalValue, displayedValue, editedValue);
+
+		var originalValue = selectedRecord.jobTitle;
+		var displayedValue = container.find('span.jobTitle').text();
+		var editedValue = container.find('input.jobTitle').val();
+		editedRecord['jobTitle'] = determineValue(originalValue, displayedValue, editedValue);
+		
+		var originalValue = selectedRecord.email;
+		var displayedValue = container.find('span.email').text();
+		var editedValue = container.find('input.email').val();
+		editedRecord['email'] = determineValue(originalValue, displayedValue, editedValue);
+
+		var originalValue = selectedRecord.departmentID;
+		var displayedValue = container.find('span.department').attr('id');
+		var editedValue = container.find('select.department').val();
+		editedRecord['departmentID'] = determineValue(originalValue, displayedValue, editedValue);
+
+		editedRecords.push(editedRecord);
+	});
+	showChanges(selectedRecords, container);
+});
+
+$('#departmentAtMobile, departmentAtDesktop').find('.confirmBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	var selectedRecords = getSelectedRecords();
+	// read DOM to local variably
+	editedRecords = [];
+	selectedRecords.forEach (function (selectedRecord) {
+		var editedRecord = {};
+		// id remains unchanged
+		editedRecord['id'] = selectedRecord.id;
+		
+		// original value is value, which is currently is DB
+		var originalValue = selectedRecord.name;
+		// displayed value might differ from original value, when multiple records are selected
+		// then 'multiple' is displayed instead original value
+		var displayedValue = container.find('span.name').text();
+		// edited value is entered by the user
+		var editedValue = container.find('input.name').val();
+		editedRecord['name'] = determineValue(originalValue, displayedValue, editedValue);
+		
+		var originalValue = selectedRecord.locationID;
+		var displayedValue = container.find('span.location').attr('id');
+		var editedValue = container.find('select.location').val();
+		editedRecord['locationID'] = determineValue(originalValue, displayedValue, editedValue);
+
+		editedRecords.push(editedRecord);
+	});
+	showChanges(selectedRecords, container);
+});
+
+$('#locationAtMobile, locationAtDesktop').find('.confirmBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	var selectedRecords = getSelectedRecords();
+	// read DOM to local variably
+	editedRecords = [];
+	selectedRecords.forEach (function (selectedRecord) {
+		var editedRecord = {};
+		// id remains unchanged
+		editedRecord['id'] = selectedRecord.id;
+		
+		// original value is value, which is currently is DB
+		var originalValue = selectedRecord.name;
+		// displayed value might differ from original value, when multiple records are selected
+		// then 'multiple' is displayed instead original value
+		var displayedValue = container.find('span.name').text();
+		// edited value is entered by the user
+		var editedValue = container.find('input.name').val();
+		editedRecord['name'] = determineValue(originalValue, displayedValue, editedValue);
+		
+		editedRecords.push(editedRecord);
+	});
+	showChanges(selectedRecords, container);
+});
+
+function showChanges(originalRecords, container) {
+	var table = $("<table></table>").attr("class", "table");
+	var tbody = $('<tbody></tbody>');
+	table.append(tbody);
+
+	var recordNumber = 0;
+	var numberOfRecordsEdited = 0;
+	editedRecords.forEach (function (editedRecord) {
+		var wasModified = false;
+		var rowsRecordFields = [];
+		for (var key in editedRecord) {
+			var originalValue = originalRecords[recordNumber][key];
+			var editedValue = editedRecord[key];
+			if (originalValue != editedValue) {
+				wasModified = true;
+				var originalValueToShow;
+				var editedValueToShow;
+				var fieldNameToShow;
+				switch (key) {
+					case 'departmentID': {
+						// need to convert department ID on its Name
+						originalValueToShow = $('select.department option[value='+originalValue+']').text();
+						editedValueToShow = $('select.department option[value='+editedValue+']').text();
+						fieldNameToShow = nameTranslations.department.displayName;
+					} break;
+					case 'locationID': {
+						// need to convert location ID on its Name
+						originalValueToShow = $('select.location option[value='+originalValue+']').text();
+						editedValueToShow = $('select.location option[value='+editedValue+']').text();
+						fieldNameToShow = nameTranslations.location.displayName;
+					} break;
+					default: {
+						originalValueToShow = originalValue;
+						editedValueToShow = editedValue;
+						fieldNameToShow = nameTranslations[selectedTable].columnsList[key];
+					}
+				}
+				var row = $('<tr></tr>')
+							.append($('<td></td>').text(fieldNameToShow))
+							.append($('<td></td>').text(originalValueToShow))
+							.append($('<td></td>').text('=>'))
+							.append($('<td></td>').text(editedValueToShow));
+				rowsRecordFields.push(row);
+			}
+		}
+		recordNumber +=1;
+		if (wasModified) {
+			numberOfRecordsEdited += 1;
+			var rowRecordId = $('<tr></tr>').append($('<th></th>').text('Record ID: ' + editedRecord.id));
+			tbody.append(rowRecordId);
+			rowsRecordFields.forEach(function(row) {
+				tbody.append(row);
+			})
+		}
+	});
+
+	if (numberOfRecordsEdited == 0) {
+		// show info about no changes
+		var info = container.find('div.alert-info').removeClass('d-none');
+		// hide info
+		setTimeout( function() {
+			info.addClass('d-none');
+		}, 3000);
+	} else {
+		// move to confirmation modal
+		$('#confirmEdited span.number').text(numberOfRecordsEdited);
+		$('#confirmEdited div.listOfChanges').html('').append(table);
+		bootstrap.Modal.getInstance(document.getElementById(selectedTable+'AtMobile')).hide();
+		new bootstrap.Modal(document.getElementById('confirmEdited'), {
+			backdrop: 'static'
+		}).show();
+	}
+};
+
+$('#confirmEdited .btn-close, #confirmEdited .backBtn').on('click', function() {
+	// move back to record details modal
+	new bootstrap.Modal(document.getElementById(selectedTable+'AtMobile')).show();
+	recordDetailsToEditMode();
+});
+
+$('#confirmEdited .updateBtn').on('click', function() {
+	// show spinner and disable update button
+	$(this).attr('disabled', 'true').find('span').removeClass('d-none');
+	$.ajax({
+		url: "php/updateRecords.php",
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table: selectedTable,
+			records: editedRecords
+		},	
+		success: updateDBsuccess,
+		error: function(jqXHR, textStatus, errorThrown) {
+			console.log("request failed");
+			console.log(jqXHR);
+			updateDBerror();
+		}
+	});
+});
+
+function updateDBsuccess(response) {
+	// stop spinner and enable confirm button
+	$('#confirmEdited .updateBtn').removeAttr('disabled').find('span').addClass('d-none');
+	if (response.status.code == "200") {
+		// show OK message and reconfigure buttons of confirmation modal
+		$('#confirmEdited .alert-success').removeClass('d-none');
+		$('#confirmEdited .alert-warning').addClass('d-none');
+		$('#confirmEdited .updateBtn').addClass('d-none');
+		$('#confirmEdited .backBtn').addClass('d-none');
+		$('#confirmEdited .closeBtn').removeClass('d-none');
+		// return to 'preview' mode of records details modal
+		recordDetailsToPreviewMode();
+		// reload table
+		getRecords(selectedTable, 'toTable');
+	} else {
+		updateDBerror();
+	}
+}
+
+function updateDBerror() {
+	// stop spinner and enable button
+	$('#confirmEdited .updateBtn').removeAttr('disabled').find('span').addClass('d-none');
+	// show error message
+	$('#confirmEdited .alert-success').addClass('d-none');
+	$('#confirmEdited .alert-warning').removeClass('d-none');
+}
+
+$('#confirmEdited').on('hidden.bs.modal', function() {
+	// return confirmation modal to default state
+	$('#confirmEdited .alert-success').addClass('d-none');
+	$('#confirmEdited .alert-warning').addClass('d-none');
+	$('#confirmEdited .updateBtn').removeClass('d-none');
+	$('#confirmEdited .backBtn').removeClass('d-none');
+	$('#confirmEdited .closeBtn').addClass('d-none');
+})
