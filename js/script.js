@@ -15,7 +15,7 @@ var nameTranslations = {
 		displayName : 'Department',
 		columnsList : {
 			// all below keys must match name in DB
-			name: 'Name',
+			name: 'Department Name',
 			location: 'Location'
 		}
 	},
@@ -23,7 +23,7 @@ var nameTranslations = {
 		displayName : 'Location',
 		columnsList : {
 			// all below keys must match name in DB
-			name: 'Name'
+			name: 'Location Name'
 		}
 	},
 }
@@ -32,6 +32,7 @@ var nameTranslations = {
 var dataTable;
 var selectedTable;
 var editedRecords;
+var dependencies = {};
 
 // ##############################################################################
 // #                        General section                                     # 
@@ -100,21 +101,18 @@ $('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
 
 function cloaseRecordDetailsAtDesktop() {
 	Object.keys(nameTranslations).forEach( key => {
-		$('#'+key+'AtDesktop').removeClass('d-md-block');
+		$('.recordDetails.'+key+'.desktop').removeClass('d-md-block');
 	})
 	recalculateContentHeight();
+	recordDetailsToPreviewMode();
 }
 
-$('#personnelAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
-
-$('#departmentAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
-
-$('#locationAtDesktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
+$('.recordDetails.desktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
 
 $('#showRecordsBtnM').on('click', function() {
 	closeColOrderPopover();
 	displaySelectedRecordsDetails();
-	new bootstrap.Modal(document.getElementById(selectedTable+'AtMobile')).show();
+	new bootstrap.Modal(document.getElementsByClassName(selectedTable+' mobile')[0]).show();
 });
 
 function getSelectedRecords() {
@@ -164,8 +162,8 @@ function displaySelectedRecordsDetails(){
 	});
 
 	// update DOM with record details
-	var desktopContainer = $('#'+selectedTable+'AtDesktop');
-	var mobileContainer = $('#'+selectedTable+'AtMobile');
+	var desktopContainer = $('.recordDetails.'+selectedTable+'.desktop');
+	var mobileContainer = $('.recordDetails.'+selectedTable+'.mobile');
 	
 	var recordName = nameTranslations[selectedTable].displayName;
 	desktopContainer.find('.modal-title span').text(recordName);
@@ -202,6 +200,9 @@ function displayRecordsList(records) {
 	// hide modals, popup
 	cloaseRecordDetailsAtDesktop();
 	closeColOrderPopover();
+
+	// clear search box
+	$('#searchBox > input').val('');
 
 	// hide button for Mobile
 	$('#showRecordsBtnM').addClass('d-none');
@@ -244,12 +245,12 @@ function displayRecordsList(records) {
 			style: 'multi+shift'
 		},
 		searchPanes: true,
-		dom: 'lrtp'			// remove 'i' to stop displaying bottom infor
+		dom: 'lrtip'			// remove 'i' to stop displaying bottom infor
 	})
 	.on('select', function () {
 		displaySelectedRecordsDetails();
 		// show profile for Desktop
-		$('#'+selectedTable+'AtDesktop').addClass('d-md-block');
+		$('.recordDetails.'+selectedTable+'.desktop').addClass('d-md-block');
 		recalculateContentHeight();
 		// show button for Mobile
 		$('#showRecordsBtnM').removeClass('d-none');
@@ -259,7 +260,7 @@ function displayRecordsList(records) {
 		if (dt.rows( { selected: true } ).data().length > 0) {
 			displaySelectedRecordsDetails();
 			// show profile for Desktop
-			$('#'+selectedTable+'AtDesktop').addClass('d-md-block');
+			$('.recordDetails'+selectedTable+'.desktop').addClass('d-md-block');
 			recalculateContentHeight();
 			// show button for Mobile
 			$('#showRecordsBtnM').removeClass('d-none');
@@ -635,7 +636,8 @@ function recordDetailsToEditMode() {
 	content.find('.confirmBtn').removeClass('d-none');
 	content.find('.duplicateBtn').addClass('d-none');
 	content.find('.deleteBtn').removeClass('d-none');
-}
+	recalculateContentHeight();
+};
 
 $('.recordDetails').find('.editBtn').on('click', function() {		
 	recordDetailsToEditMode();
@@ -650,7 +652,8 @@ function recordDetailsToPreviewMode() {
 	content.find('.confirmBtn').addClass('d-none');
 	content.find('.duplicateBtn').removeClass('d-none');
 	content.find('.deleteBtn').addClass('d-none');
-}
+	recalculateContentHeight();
+};
 
 $('.recordDetails').on('hidden.bs.modal', function () {
 	recordDetailsToPreviewMode();
@@ -685,13 +688,13 @@ function populateSelectOptions(records, table) {
 	// thus list should have 'multiple' option available to display only, but not to select by user
 	select.append($("<option></option>").val('multiple').text('multiple').addClass('d-none'));
 	select.val(select.next('span').attr('id'));
-}
+};
 
-$('#departmentAtMobile, #departmentAtDesktop').find('.editBtn').on('click', function() {
+$('.recordDetails.department').find('.editBtn').on('click', function() {
 	getRecords('location', 'toSelectOptions');
 });
 
-$('#personnelAtMobile, personnelAtDesktop').find('.editBtn').on('click', function() {
+$('.recordDetails.personnel').find('.editBtn').on('click', function() {
 	getRecords('department', 'toSelectOptions');
 });
 
@@ -711,9 +714,9 @@ function determineValue(originalValue, displayedValue, editedValue) {
 		// this migh be different for each record if more than one selected
 		return originalValue;
 	}
-}
+};
 
-$('#personnelAtMobile, personnelAtDesktop').find('.confirmBtn').on('click', function() {
+$('.recordDetails.personnel').find('.confirmBtn').on('click', function() {
 	var container = $(this).closest('.recordDetails');
 	var selectedRecords = getSelectedRecords();
 	// read DOM to local variably
@@ -757,7 +760,7 @@ $('#personnelAtMobile, personnelAtDesktop').find('.confirmBtn').on('click', func
 	showChanges(selectedRecords, container);
 });
 
-$('#departmentAtMobile, departmentAtDesktop').find('.confirmBtn').on('click', function() {
+$('.recordDetails.department').find('.confirmBtn').on('click', function() {
 	var container = $(this).closest('.recordDetails');
 	var selectedRecords = getSelectedRecords();
 	// read DOM to local variably
@@ -786,7 +789,7 @@ $('#departmentAtMobile, departmentAtDesktop').find('.confirmBtn').on('click', fu
 	showChanges(selectedRecords, container);
 });
 
-$('#locationAtMobile, locationAtDesktop').find('.confirmBtn').on('click', function() {
+$('.recordDetails.location').find('.confirmBtn').on('click', function() {
 	var container = $(this).closest('.recordDetails');
 	var selectedRecords = getSelectedRecords();
 	// read DOM to local variably
@@ -811,10 +814,10 @@ $('#locationAtMobile, locationAtDesktop').find('.confirmBtn').on('click', functi
 });
 
 function showChanges(originalRecords, container) {
+	// generata table which show list of changs and count number of changed records
 	var table = $("<table></table>").attr("class", "table");
 	var tbody = $('<tbody></tbody>');
 	table.append(tbody);
-
 	var recordNumber = 0;
 	var numberOfRecordsEdited = 0;
 	editedRecords.forEach (function (editedRecord) {
@@ -831,14 +834,14 @@ function showChanges(originalRecords, container) {
 				switch (key) {
 					case 'departmentID': {
 						// need to convert department ID on its Name
-						originalValueToShow = $('select.department option[value='+originalValue+']').text();
-						editedValueToShow = $('select.department option[value='+editedValue+']').text();
+						originalValueToShow = $('.mobile select.department option[value='+originalValue+']').text();
+						editedValueToShow = $('.mobile select.department option[value='+editedValue+']').text();
 						fieldNameToShow = nameTranslations.department.displayName;
 					} break;
 					case 'locationID': {
 						// need to convert location ID on its Name
-						originalValueToShow = $('select.location option[value='+originalValue+']').text();
-						editedValueToShow = $('select.location option[value='+editedValue+']').text();
+						originalValueToShow = $('.mobile select.location option[value='+originalValue+']').text();
+						editedValueToShow = $('.mobile select.location option[value='+editedValue+']').text();
 						fieldNameToShow = nameTranslations.location.displayName;
 					} break;
 					default: {
@@ -850,7 +853,7 @@ function showChanges(originalRecords, container) {
 				var row = $('<tr></tr>')
 							.append($('<td></td>').text(fieldNameToShow))
 							.append($('<td></td>').text(originalValueToShow))
-							.append($('<td></td>').text('=>'))
+							.append($('<td></td>').append($('<i></i>').addClass('bi bi-arrow-right')))
 							.append($('<td></td>').text(editedValueToShow));
 				rowsRecordFields.push(row);
 			}
@@ -869,15 +872,20 @@ function showChanges(originalRecords, container) {
 	if (numberOfRecordsEdited == 0) {
 		// show info about no changes
 		var info = container.find('div.alert-info').removeClass('d-none');
+		recalculateContentHeight();
 		// hide info
 		setTimeout( function() {
 			info.addClass('d-none');
+			recalculateContentHeight();
 		}, 3000);
 	} else {
+		// hide record details on mobile
+		if (container.hasClass('mobile')) {
+			bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]).hide();
+		}
 		// move to confirmation modal
 		$('#confirmEdited span.number').text(numberOfRecordsEdited);
 		$('#confirmEdited div.listOfChanges').html('').append(table);
-		bootstrap.Modal.getInstance(document.getElementById(selectedTable+'AtMobile')).hide();
 		new bootstrap.Modal(document.getElementById('confirmEdited'), {
 			backdrop: 'static'
 		}).show();
@@ -885,8 +893,11 @@ function showChanges(originalRecords, container) {
 };
 
 $('#confirmEdited .btn-close, #confirmEdited .backBtn').on('click', function() {
-	// move back to record details modal
-	new bootstrap.Modal(document.getElementById(selectedTable+'AtMobile')).show();
+	// check if mobile by checking if nav bar if collapsed
+	if ($('nav .navbar-toggler').is(':visible')) {
+		// move back to record details modal
+		new bootstrap.Modal(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]).show();
+	}
 	recordDetailsToEditMode();
 });
 
@@ -927,7 +938,7 @@ function updateDBsuccess(response) {
 	} else {
 		updateDBerror();
 	}
-}
+};
 
 function updateDBerror() {
 	// stop spinner and enable button
@@ -935,7 +946,7 @@ function updateDBerror() {
 	// show error message
 	$('#confirmEdited .alert-success').addClass('d-none');
 	$('#confirmEdited .alert-warning').removeClass('d-none');
-}
+};
 
 $('#confirmEdited').on('hidden.bs.modal', function() {
 	// return confirmation modal to default state
@@ -944,4 +955,254 @@ $('#confirmEdited').on('hidden.bs.modal', function() {
 	$('#confirmEdited .updateBtn').removeClass('d-none');
 	$('#confirmEdited .backBtn').removeClass('d-none');
 	$('#confirmEdited .closeBtn').addClass('d-none');
-})
+});
+
+// ##############################################################################
+// #                                  Duplicate                                 #
+// ##############################################################################
+
+$('.recordDetails').find('.duplicateBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	var selectedRecords = getSelectedRecords();
+	// hide record details on mobile
+	if (container.hasClass('mobile')) {
+		bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]).hide();
+	}
+	// move to confirmation modal
+	$('#confirmDuplication span.number').text(selectedRecords.length);
+	new bootstrap.Modal(document.getElementById('confirmDuplication'), {
+		backdrop: 'static'
+	}).show();
+});
+
+$('#confirmDuplication .btn-close, #confirmDuplication .backBtn').on('click', function() {
+	// check if mobile by checking if nav bar if collapsed
+	if ($('nav .navbar-toggler').is(':visible')) {
+		// move back to record details modal
+		new bootstrap.Modal(document.getElementsByClassName(' recordDetails '+selectedTable+' mobile')[0]).show();
+	}
+});
+
+$('#confirmDuplication .duplicateBtn').on('click', function() {
+	var selectedRecords = getSelectedRecords();
+	// show spinner and disable duplicate button
+	$(this).attr('disabled', 'true').find('span').removeClass('d-none');
+	$.ajax({
+		url: "php/duplicateRecords.php",
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table: selectedTable,
+			records: selectedRecords
+		},	
+		success: duplicateDBsuccess,
+		error: function(jqXHR, textStatus, errorThrown) {
+			console.log("request failed");
+			console.log(jqXHR);
+			duplicateDBerror();
+		}
+	});
+});
+
+function duplicateDBsuccess(response) {
+	// stop spinner and enable confirm button
+	$('#confirmDuplication .duplicateBtn').removeAttr('disabled').find('span').addClass('d-none');
+	if (response.status.code == "201") {
+		// show OK message and reconfigure buttons of confirmation modal
+		$('#confirmDuplication .alert-success').removeClass('d-none');
+		$('#confirmDuplication .alert-warning').addClass('d-none');
+		$('#confirmDuplication .duplicateBtn').addClass('d-none');
+		$('#confirmDuplication .backBtn').addClass('d-none');
+		$('#confirmDuplication .closeBtn').removeClass('d-none');
+		// reload table
+		getRecords(selectedTable, 'toTable');
+	} else {
+		duplicateDBerror();
+	}
+};
+
+function duplicateDBerror() {
+	// stop spinner and enable button
+	$('#confirmDuplication .duplicateBtn').removeAttr('disabled').find('span').addClass('d-none');
+	// show error message
+	$('#confirmDuplication .alert-success').addClass('d-none');
+	$('#confirmDuplication .alert-warning').removeClass('d-none');
+};
+
+$('#confirmDuplication').on('hidden.bs.modal', function() {
+	// return confirmation modal to default state
+	$('#confirmDuplication .alert-success').addClass('d-none');
+	$('#confirmDuplication .alert-warning').addClass('d-none');
+	$('#confirmDuplication .duplicateBtn').removeClass('d-none');
+	$('#confirmDuplication .backBtn').removeClass('d-none');
+	$('#confirmDuplication .closeBtn').addClass('d-none');
+});
+
+// ##############################################################################
+// #                                  Delete                                    #
+// ##############################################################################
+
+function getListOfIds(records) {
+	var list = [];
+	records.forEach(function (record) {
+		list.push(record.id);
+	})
+	return list;
+}
+
+$('.recordDetails').find('.deleteBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	var selectedRecordIds = getListOfIds(getSelectedRecords());
+	// hide record details on mobile
+	if (container.hasClass('mobile')) {
+		bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]).hide();
+	}
+	// move to confirmation modal
+	$('#confirmDeletion span.number').text(selectedRecordIds.length);
+	new bootstrap.Modal(document.getElementById('confirmDeletion'), {
+		backdrop: 'static'
+	}).show();
+});
+
+$('#confirmDeletion .btn-close, #confirmDeletion .backBtn').on('click', function() {
+	// check if mobile by checking if nav bar if collapsed
+	if ($('nav .navbar-toggler').is(':visible')) {
+		// move back to record details modal
+		new bootstrap.Modal(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]).show();
+	}
+	recordDetailsToEditMode();
+});
+
+$('#confirmDeletion .deleteBtn').on('click', function() {
+	var selectedRecordIds = getListOfIds(getSelectedRecords());
+	// show spinner and disable delete button
+	$(this).attr('disabled', 'true').find('span').removeClass('d-none');
+	$.ajax({
+		url: "php/deleteRecords.php",
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table: selectedTable,
+			records: selectedRecordIds
+		},	
+		success: deleteDBsuccess,
+		error: function(jqXHR, textStatus, errorThrown) {
+			console.log("request failed");
+			console.log(jqXHR);
+			deleteDBerror();
+		}
+	});
+});
+
+function deleteDBsuccess(response) {
+	// stop spinner and enable confirm button
+	$('#confirmDeletion .deleteBtn').removeAttr('disabled').find('span').addClass('d-none');
+	switch (response.status.code) {
+		case '204': {
+			// show OK message and reconfigure buttons of confirmation modal
+			$('#confirmDeletion .alert-success').removeClass('d-none');
+			$('#confirmDeletion .alert-warning').addClass('d-none');
+			$('#confirmDeletion .deleteBtn').addClass('d-none');
+			$('#confirmDeletion .backBtn').addClass('d-none');
+			$('#confirmDeletion .closeBtn').removeClass('d-none');
+			// reload table
+			getRecords(selectedTable, 'toTable');
+		} break;
+		case '202': {
+			// some records has dependencies
+			$('#confirmDeletion .alert-success').addClass('d-none');
+			$('#confirmDeletion .alert-warning.dependencies').removeClass('d-none');
+			$('#confirmDeletion .alert-warning.error').addClass('d-none');
+			$('#confirmDeletion .deleteBtn').addClass('d-none');
+			$('#confirmDeletion .editDependenciesBtn').removeClass('d-none');
+			dependencies['withDependencies'] = response.withDependencies;
+			dependencies['alternatives'] = response.alternatives;
+		} break;
+		case '400': {
+			deleteDBerror();
+		}
+	}
+};
+
+function deleteDBerror() {
+	// stop spinner and enable button
+	$('#confirmDeletion .deleteBtn').removeAttr('disabled').find('span').addClass('d-none');
+	// show error message
+	$('#confirmDeletion .alert-success').addClass('d-none');
+	$('#confirmDeletion .alert-warning.dependencies').addClass('d-none');
+	$('#confirmDeletion .alert-warning.error').removeClass('d-none');
+};
+
+$('#confirmDeletion').on('hidden.bs.modal', function() {
+	// return confirmation modal to default state
+	$('#confirmDeletion .alert-success').addClass('d-none');
+	$('#confirmDeletion .alert-warning').addClass('d-none');
+	$('#confirmDeletion .deleteBtn').removeClass('d-none');
+	$('#confirmDeletion .backBtn').removeClass('d-none');
+	$('#confirmDeletion .closeBtn').addClass('d-none');
+	$('#confirmDeletion .editDependenciesBtn').addClass('d-none');
+	$('#confirmDeletion .dependenciesDetails').addClass('d-none');
+	$('#confirmDeletion .deleteMessage').removeClass('d-none');
+	$('#confirmDeletion .releaseDependenciesBtn').addClass('d-none');
+});
+
+$('#confirmDeletion .editDependenciesBtn').on('click', function() {
+	// hide alerts and delete message
+	$('#confirmDeletion .alert-success').addClass('d-none');
+	$('#confirmDeletion .alert-warning').addClass('d-none');
+	$('#confirmDeletion .deleteMessage').addClass('d-none');
+	$('#confirmDeletion .editDependenciesBtn').addClass('d-none');
+	$('#confirmDeletion .releaseDependenciesBtn').removeClass('d-none');
+
+	// show list of dependencies
+	var container = $('#confirmDeletion .dependenciesDetails').html('');
+
+	for (var id in dependencies['withDependencies']) {
+		var dependentRecords = dependencies['withDependencies'][id].records;
+	
+		// build text message
+		var numberOfRecordsText;
+		if (dependentRecords.length == 1) {
+			numberOfRecordsText = 'is 1 record';
+		} else {
+			numberOfRecordsText = 'are ' + dependentRecords.length + ' records';
+		}
+		var dependencyText = dependentRecords[0][selectedTable] + ' ';
+		dependencyText += nameTranslations[selectedTable].displayName;
+		var infoText = 'There '+numberOfRecordsText+' dependend on ' + dependencyText + '. Where you would like to move them:';
+		var info = $('<p></p>').text(infoText);
+		
+		// build options list
+		var select = $('<select></select>').addClass('form-select ' + selectedTable).attr('id', id);
+		// check how many options are available
+		if (dependencies['alternatives'].length == 0) {
+			// no options, inform user
+			select.append($("<option></option>").text('No alternatives available.').addClass('d-none'));
+		} else {
+			// one option is to message user
+			select.append($("<option></option>").text('Please select alternative').addClass('d-none'));
+			dependencies['alternatives'].forEach(function(option) {
+				var text = option.name;
+				if ('location' in option) {
+					text += ' ('+option.location+')';
+				}
+				select.append($("<option></option>").val(option.id).text(text));
+			});
+		}
+		select.append($("<option></option>").val('unchanged').text('Leave unchanged'));
+
+		var spacer = $('<hr>');
+
+		container.append(info).append(select).append(spacer);
+
+	};
+
+	container.removeClass('d-none');
+
+});
+
+$('#confirmDeletion .releaseDependenciesBtn').on('click', function() {
+	console.log('try to move and delete');
+
+});
+

@@ -127,37 +127,201 @@
 						title="Add Record"><i class="bi bi-plus-square"></i><br>Add</button>
 				</div>
 				<!-- Section for Desktop to display presons details -->
-				<div class="container d-none" id="personnelAtDesktop">
-					<button type="button" class="btn-close" aria-label="Close"></button>
-					<br>
-					Person details:
-					<br>
-					Record ID: <span id="recordId"></span><br>
-					First Name: <span id="firstName"></span><br>
-					Last Name: <span id="lastName"></span><br>
-					Job Title: <span id="jobTitle"></span><br>
-					E-mail: <span id="email"></span><br>
-					Department: <span id="department"></span><br>
-					Location: <span id="location"></span><br>
+				<div class="container recordDetails personnel desktop d-none border-top border-4 rounded-top">
+					<div class="row">
+						<div class="alert alert-info d-none text-center" role="alert">
+							You had not made any changes to selected record(s).
+						</div>
+					</div>
+					<div class="row align-items-center">
+						<div class="col-3 text-center">
+							<img src="vendors/bootstrap-icons/person.svg" width="70%" height="auto"/>
+						</div>
+						<div class="col">
+							<div class="row">
+								<div class="col mb-3 text-end">
+									<button type="button" class="btn mx-2 my-2 btn-primary duplicateBtn">Duplicate record</button>
+									<button type="button" class="btn mx-2 my-2 btn-danger deleteBtn d-none">Delete record</button>
+									<button type="button" class="btn mx-2 my-2 btn-primary editBtn">Edit</button>
+									<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+									<button type="button" class="btn-close mx-2 my-2" aria-label="Close"></button>
+								</div>
+							</div>
+							<div class="row editable d-none">
+								<div class="col ms-0 ps-0 mb-3 form-floating">
+									<input type="text" class="form-control text-center firstName fs-3 fw-bold">
+									<label class="form-label small fw-bold firstName"></label>
+								</div>
+								<div class="col ms-0 ps-0 mb-3 form-floating">
+									<input type="text" class="form-control text-center lastName fs-3 fw-bold">
+									<label class="form-label small fw-bold lastName"></label>
+								</div>
+							</div>
+							<div class="row fs-3 fw-bold preview">
+								<div class="col ms-0 ps-0">
+									<p>
+										<span class="firstName"></span>
+										<span class="lastName"></span>
+									</p>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col ms-0 ps-0 form-floating">
+									<input type="text" class="form-control text-center jobTitle editable d-none">
+									<label class="form-label small fw-bold editable d-none jobTitle"></label>
+									<span class="fst-italic jobTitle d-block preview"></span>
+								</div>
+								<div class="col-auto">
+									<label class="form-label text-muted fs-6">Record ID: <span id="recordId"></span></label>
+								</div>
+							</div>
+							<hr>
+							<div class="row">
+								<table class="table table-borderless">
+									<tbody>
+									<tr>
+										<th class="text-end">
+											<label class="form-label small fw-bold email"></label>
+										</th>
+										<td>
+											<input type="email" class="form-control email editable d-none">
+											<span class="email d-block preview"></span>
+										</td>
+									</tr>
+									<tr>
+										<th class="text-end">
+											<label class="form-label small fw-bold department"></label>
+										</th>
+										<td>
+											<select class="form-select editable department d-none" aria-label="department">
+												<!-- options populated by javascript-->
+											</select>
+											<span class="department d-block preview"></span>
+										</td>
+									</tr>
+									<tr>
+										<th class="text-end">
+											<label class="form-label small fw-bold location"></label>
+										</th>
+										<td>
+											<span class="location d-block"></span>
+										</td>
+									</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
 				</div>
 				<!-- Section for Desktop to display department details -->
-				<div class="container d-none" id="departmentAtDesktop">
-					<button type="button" class="btn-close" aria-label="Close"></button>
-					<br>
-					Department details:
-					<br>
-					Record ID: <span id="recordId"></span><br>
-					Name: <span id="name"></span><br>
-					Location: <span id="location"></span><br>
+				<div class="container recordDetails department desktop d-none border-top border-4 rounded-top">
+					<div class="row">
+						<div class="alert alert-info d-none text-center" role="alert">
+							You had not made any changes to selected record(s).
+						</div>
+					</div>
+					<div class="row align-items-center">
+						<div class="col-3 text-center">
+							<img src="vendors/bootstrap-icons/building.svg" width="70%" height="auto"/>
+						</div>
+						<div class="col">
+							<div class="row">
+								<div class="col mb-3 text-end">
+									<button type="button" class="btn mx-2 my-2 btn-primary duplicateBtn">Duplicate record</button>
+									<button type="button" class="btn mx-2 my-2 btn-danger deleteBtn d-none">Delete record</button>
+									<button type="button" class="btn mx-2 my-2 btn-primary editBtn">Edit</button>
+									<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+									<button type="button" class="btn-close mx-2 my-2" aria-label="Close"></button>
+								</div>
+							</div>
+							<div class="row editable d-none">
+								<div class="col ms-0 ps-0 mb-3 form-floating">
+									<input type="text" class="form-control text-center name fs-3 fw-bold">
+									<label class="form-label small fw-bold name"></label>
+								</div>
+							</div>
+							<div class="row fs-3 fw-bold preview">
+								<div class="col ms-0 ps-0">
+									<p>
+										<span class="name"></span>
+									</p>
+								</div>
+							</div>
+							<div class="row justify-content-end">
+								<div class="col-auto">
+									<label class="form-label text-muted fs-6">Record ID: <span id="recordId"></span></label>
+								</div>
+							</div>
+							<hr>
+							<div class="row">
+								<table class="table table-borderless">
+									<tbody>
+									<tr>
+										<th class="text-end">
+											<label class="form-label small fw-bold location"></label>
+										</th>
+										<td>
+											<select class="form-select editable location d-none" aria-label="location">
+												<!-- options populated by javascript-->
+											</select>
+											<span class="location d-block preview"></span>
+										</td>
+									</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
 				</div>
 				<!-- Section for Desktop to display location details -->
-				<div class="container d-none" id="locationAtDesktop">
-					<button type="button" class="btn-close" aria-label="Close"></button>
-					<br>
-					Location details:
-					<br>
-					Record ID: <span id="recordId"></span><br>
-					Name: <span id="name"></span><br>
+				<div class="container recordDetails location desktop d-none border-top border-4 rounded-top">
+					<div class="row">
+						<div class="alert alert-info d-none text-center" role="alert">
+							You had not made any changes to selected record(s).
+						</div>
+					</div>
+					<div class="row align-items-center">
+						<div class="col-3 text-center">
+							<img src="vendors/bootstrap-icons/geo-alt.svg" width="70%" height="auto"/>
+						</div>
+						<div class="col">
+							<div class="row">
+								<div class="col mb-3 text-end">
+									<button type="button" class="btn mx-2 my-2 btn-primary duplicateBtn">Duplicate record</button>
+									<button type="button" class="btn mx-2 my-2 btn-danger deleteBtn d-none">Delete record</button>
+									<button type="button" class="btn mx-2 my-2 btn-primary editBtn">Edit</button>
+									<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+									<button type="button" class="btn-close mx-2 my-2" aria-label="Close"></button>
+								</div>
+							</div>
+							<div class="row editable d-none">
+								<div class="col ms-0 ps-0 mb-3 form-floating">
+									<input type="text" class="form-control text-center name fs-3 fw-bold">
+									<label class="form-label small fw-bold name"></label>
+								</div>
+							</div>
+							<div class="row fs-3 fw-bold preview">
+								<div class="col ms-0 ps-0">
+									<p>
+										<span class="name"></span>
+									</p>
+								</div>
+							</div>
+							<div class="row justify-content-end">
+								<div class="col-auto">
+									<label class="form-label text-muted fs-6">Record ID: <span id="recordId"></span></label>
+								</div>
+							</div>
+							<hr>
+							<div class="row">
+								<table class="table table-borderless">
+									<tbody>
+									
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</main>
@@ -172,7 +336,7 @@
 		</div>
 
 		<!-- Modal for Mobile to display presons details -->
-		<div class="modal fade recordDetails" id="personnelAtMobile" tabindex="-1" aria-labelledby="personModalLabel" aria-hidden="true">
+		<div class="modal fade recordDetails personnel mobile" tabindex="-1" aria-labelledby="personnelModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -243,20 +407,20 @@
 						</div>
 					</div>
 				</div>
-				<div class="modal-footer">
+				<div class="modal-footer justify-content-evenly">
 					<div class="container-fluid alert alert-info d-none" role="alert">
-						You had not made any changes to selected records.
+						You had not made any changes to selected record(s).
 					</div>
 					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
 					<button type="button" class="btn btn-primary editBtn">Edit</button>
-					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
 			</div>
 		</div>
 
 		<!-- Modal for Mobile to display department details -->
-		<div class="modal fade recordDetails" id="departmentAtMobile" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
+		<div class="modal fade recordDetails department mobile" tabindex="-1" aria-labelledby="departmentModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -296,20 +460,20 @@
 						</div>
 					</div>
 				</div>
-				<div class="modal-footer">
+				<div class="modal-footer justify-content-evenly">
 					<div class="container-fluid alert alert-info d-none" role="alert">
-						You had not made any changes to selected records.
+						You had not made any changes to selected record(s).
 					</div>
 					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
 					<button type="button" class="btn btn-primary editBtn">Edit</button>
-					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
 			</div>
 		</div>
 
 		<!-- Modal for Mobile to display location details -->
-		<div class="modal fade recordDetails" id="locationAtMobile" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+		<div class="modal fade recordDetails location mobile" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -340,13 +504,13 @@
 						</div>
 					</div>
 				</div>
-				<div class="modal-footer">
+				<div class="modal-footer justify-content-evenly">
 					<div class="container-fluid alert alert-info d-none" role="alert">
-						You had not made any changes to selected records.
+						You had not made any changes to selected record(s).
 					</div>
 					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
 					<button type="button" class="btn btn-primary editBtn">Edit</button>
-					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
 			</div>
@@ -362,7 +526,7 @@
 				</div>
 				<div class="modal-body">
 					<div class="mb-3">
-						<label for="sortByColumns" class="form-label">Sort by column:</label>
+						<label for="sortByColumns" class="form-label">Sort by:</label>
 						<select class="form-select" id="sortByColumns" aria-label="Sort by">
 							<!-- options populated by javascript-->
 						</select>
@@ -378,9 +542,9 @@
 						<p>You selected hidden column. This column will be moved to most left and become visible.</p>
 					</div>
 				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				<div class="modal-footer justify-content-evenly">
 					<button type="button" id="sortConfirmBtnM" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 				</div>
 			</div>
 			</div>
@@ -439,7 +603,7 @@
 						</div>
 					</div>
 				</div>
-				<div class="modal-footer">
+				<div class="modal-footer justify-content-evenly">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 				</div>
 			</div>
@@ -460,12 +624,12 @@
 						<div class="listOfChanges"></div>
 					</div>
 				</div>
-				<div class="modal-footer">
+				<div class="modal-footer justify-content-evenly">
 					<div class="container-fluid alert alert-success d-none" role="alert">
-						All records updates succesfully.
+						Record(s) updated succesfully.
 					</div>
 					<div class="container-fluid alert alert-warning d-none" role="alert">
-						Some records were not updated due to an error.<br>
+						Record(s) were not updated due to an error.<br>
 						You can try again.
 					</div>
 					<button type="button" 
@@ -474,6 +638,84 @@
 								  role="status" 
 								  aria-hidden="true"></span>
 							Update
+						</button>
+					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
+					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
+		</div>
+
+		<!-- Modal to confirm record duplication-->
+		<div class="modal fade" id="confirmDuplication" tabindex="-1" aria-labelledby="confirmDuplicationModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="confirmDuplicationModalLabel">Confirmation</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="container">
+						<p>Are you sure to duplicate <span class="number"></span> record(s) ?</p>
+					</div>
+				</div>
+				<div class="modal-footer justify-content-evenly">
+					<div class="container-fluid alert alert-success d-none" role="alert">
+						Record(s) duplicated succesfully.
+					</div>
+					<div class="container-fluid alert alert-warning d-none" role="alert">
+						Records were not duplicated due to an error.<br>
+						You can try again.
+					</div>
+					<button type="button" 
+							class="btn btn-warning duplicateBtn">
+							<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+							Duplicate
+						</button>
+					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
+					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
+		</div>
+
+		<!-- Modal to confirm record deletion-->
+		<div class="modal fade" id="confirmDeletion" tabindex="-1" aria-labelledby="confirmDeletionModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="confirmDeletionModalLabel">Confirmation</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="container deleteMessage">
+						<p>Are you sure to delete <span class="number"></span> record(s) ?</p>
+					</div>
+					<div class="container dependenciesDetails d-none">
+						<!-- items populated by Java script -->
+					</div>
+				</div>
+				<div class="modal-footer justify-content-evenly">
+					<div class="container-fluid alert alert-success d-none" role="alert">
+						Record(s) deleted succesfully.
+					</div>
+					<div class="container-fluid alert alert-warning d-none dependencies" role="alert">
+						Some records were not deleted, because other records depends on them.
+					</div>
+					<div class="container-fluid alert alert-warning d-none error" role="alert">
+						Error occured during record removal.<br>
+						You can try again.
+					</div>
+					<button type="button" class="btn btn-warning releaseDependenciesBtn d-none">Confirm and Delete</button>
+					<button type="button" class="btn btn-primary editDependenciesBtn d-none">Edit dependencies</button>
+					<button type="button" 
+							class="btn btn-warning deleteBtn">
+							<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+							Delete
 						</button>
 					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
