@@ -31,11 +31,10 @@
 
 	}	
 
+    // iterate over all requested records
     $deleted = [];
     $withDependencies = [];
     $error = [];
-    
-    // iterate over all requested records
     foreach ($_POST['records'] as $id) {
         
         $result = tryToRemoveRecord($conn, $_POST['table'], $id);
@@ -45,8 +44,10 @@
                 array_push($deleted, $id); 
             } break;
             case 'withDependencies': {
-                $withDependencies[$id]['records'] = $result['dependencies'];
+                $withDependencies[$id]['dependencies'] = $result['dependencies'];
                 $withDependencies[$id]['type'] = $result['type'];
+                $withDependencies[$id]['value'] = $result['value'];
+                //$withDependencies[$id]['test'] = $result['test'];
             } break;
             case 'error': {
                 array_push($error, $id); 
@@ -54,9 +55,8 @@
         }
 
     }
-
     $output['deleted'] = $deleted;
-    $output['withDependencies'] = $withDependencies;
+    $output['recordsWithDependencies'] = $withDependencies;
     $output['error'] = $error;
 
     // if there are dependencies, then get list of alternatives
@@ -64,6 +64,7 @@
         $output['alternatives'] = getAlternatives($conn, $_POST['table'], $_POST['records']);
     }
 
+    // determine the status
     if (count($deleted) == count($_POST['records'])) {
         // all records removed
         $output['status']['code'] = "204";
@@ -102,13 +103,15 @@
             } break;
             case 'department': {
                 // need to check if there is/are personel who belongs to this department
-                $query = 'SELECT p.id, p.lastName, p.firstName, p.jobTitle, p.email, p.departmentID, d.name as department FROM personnel p LEFT JOIN department d ON (d.id = p.departmentID) WHERE p.departmentID = "' . $id . '"';
+                $query = 'SELECT p.id, d.name as value FROM personnel p LEFT JOIN department d ON (d.id = p.departmentID) WHERE p.departmentID = ' . $id;
                 $result['type'] = 'personnel';
+                $result['field'] = 'departmentID';
             } break;
             case 'location': {
                 // need to check if there is department which belongs to this location
-                $query = 'SELECT d.id, d.name, d.locationID, l.name as location FROM department d LEFT JOIN location l ON (l.id = d.locationID) WHERE d.locationID = "' . $id . '"';
+                $query = 'SELECT d.id, l.name as value FROM department d LEFT JOIN location l ON (l.id = d.locationID) WHERE d.locationID = ' . $id;
                 $result['type'] = 'department';
+                $result['field'] = 'locationID';
             } break;
         }
         
@@ -120,33 +123,56 @@
         } else {
             $dependencies = [];
             while ($row = mysqli_fetch_assoc($dBresult)) {
-                array_push($dependencies, $row);
+                array_push($dependencies, $row['id']);
+                $result['value'] = $row['value'];
             }
             if (count($dependencies) == 0) {
                 // no dependencies; thus record can be to removed
                 $result['status'] = removeRecord($conn, $table, $id);
             } else {
-                // record cannot be removed, dependecies are reported
-                $result['status'] = 'withDependencies';
-                $result['dependencies'] = $dependencies;
+                // record cannot be removed, because dependecies are reported
+                // check if alternative was provided and try to update
+                if (tryToUpdateDependency($conn, $result['type'], $result['field'], $dependencies, $id)) {
+                    // no more dependencies thus can be removed
+                    $result['status'] = removeRecord($conn, $table, $id);
+                } else {
+                    // dependenciew were not updated/released
+                    $result['status'] = 'withDependencies';
+                    $result['dependencies'] = $dependencies;
+                }
             }
         }
         return $result;
     }
 
+    function tryToUpdateDependency($conn, $table, $field, $dependencies, $id) {
+        
+        if (array_key_exists('newDependency', $_POST)) {
+            if (array_key_exists($id, $_POST['newDependency'])) {
+                $newValue = $_POST['newDependency'][$id];
+                $status = true;
+                foreach ($dependencies as $dependencieId) {
+                    $query = 'UPDATE ' . $table . ' SET ' . $field . ' = ' . $newValue . ' WHERE id = ' . $dependencieId;
+                    $dBresult = $conn->query($query);
+                    if (!$dBresult) {
+                        $status = false;
+                    }
+                }
+                return $status;
+            }
+        } 
+        return false;
+    }
+
     function removeRecord($conn, $table, $id) {
         $query = 'DELETE FROM '.$table.' WHERE id = '.$id;
         
-        // TEST: simulate error
-        //if ($id == 6 || $id == 4) return 'error';
-
-        // TEST: simulate removal
-        $dBresult = true;// $conn->query($query);
+        $dBresult = $conn->query($query);
         
-        if (!$dBresult) {
-            return 'error';
-        } else {
+        if ($dBresult) {
             return 'deleted';
+        } else {
+            return 'error';
         }
     }
 
@@ -160,7 +186,7 @@
                 // there is no dependencies by the DP definition
             } break;
             case 'department': {
-                $query = 'SELECT d.id, d.name, d.locationID, l.name as location FROM department d LEFT JOIN location l ON (l.id = d.locationID) ORDER BY d.name, l.name';
+                $query = 'SELECT d.id, d.name, l.name as location FROM department d LEFT JOIN location l ON (l.id = d.locationID) ORDER BY d.name, l.name';
             } break;
             case 'location': {
                 $query = 'SELECT id, name FROM location ORDER BY name';

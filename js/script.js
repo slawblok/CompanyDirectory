@@ -32,7 +32,6 @@ var nameTranslations = {
 var dataTable;
 var selectedTable;
 var editedRecords;
-var dependencies = {};
 
 // ##############################################################################
 // #                        General section                                     # 
@@ -1058,7 +1057,7 @@ $('.recordDetails').find('.deleteBtn').on('click', function() {
 		bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]).hide();
 	}
 	// move to confirmation modal
-	$('#confirmDeletion span.number').text(selectedRecordIds.length);
+	$('#confirmDeletion span.numberOfRecordsToDelete').text(selectedRecordIds.length);
 	new bootstrap.Modal(document.getElementById('confirmDeletion'), {
 		backdrop: 'static'
 	}).show();
@@ -1083,7 +1082,8 @@ $('#confirmDeletion .deleteBtn').on('click', function() {
 		dataType: 'json',
 		data: {
 			table: selectedTable,
-			records: selectedRecordIds
+			records: selectedRecordIds,
+			newDependency: {}
 		},	
 		success: deleteDBsuccess,
 		error: function(jqXHR, textStatus, errorThrown) {
@@ -1097,7 +1097,11 @@ $('#confirmDeletion .deleteBtn').on('click', function() {
 function deleteDBsuccess(response) {
 	// stop spinner and enable confirm button
 	$('#confirmDeletion .deleteBtn').removeAttr('disabled').find('span').addClass('d-none');
+	$('#confirmDeletion .releaseDependenciesBtn').removeAttr('disabled').find('span').addClass('d-none');
 	switch (response.status.code) {
+		case '400': {
+			deleteDBerror();
+		}
 		case '204': {
 			// show OK message and reconfigure buttons of confirmation modal
 			$('#confirmDeletion .alert-success').removeClass('d-none');
@@ -1105,6 +1109,9 @@ function deleteDBsuccess(response) {
 			$('#confirmDeletion .deleteBtn').addClass('d-none');
 			$('#confirmDeletion .backBtn').addClass('d-none');
 			$('#confirmDeletion .closeBtn').removeClass('d-none');
+			$('#confirmDeletion .deleteMessage').addClass('d-none');
+			$('#confirmDeletion .dependenciesDetails').addClass('d-none');
+			$('#confirmDeletion .releaseDependenciesBtn').addClass('d-none');
 			// reload table
 			getRecords(selectedTable, 'toTable');
 		} break;
@@ -1115,22 +1122,72 @@ function deleteDBsuccess(response) {
 			$('#confirmDeletion .alert-warning.error').addClass('d-none');
 			$('#confirmDeletion .deleteBtn').addClass('d-none');
 			$('#confirmDeletion .editDependenciesBtn').removeClass('d-none');
-			dependencies['withDependencies'] = response.withDependencies;
-			dependencies['alternatives'] = response.alternatives;
+			$('#confirmDeletion .deleteMessage').addClass('d-none');
+			$('#confirmDeletion .dependenciesDetails').addClass('d-none');
+			$('#confirmDeletion .releaseDependenciesBtn').addClass('d-none');
+
+			// prepare list of dependencies foe each record to delete, which has dependencies
+			var recordsWithDependencies = response.recordsWithDependencies;
+			var alternatives = response.alternatives;
+			var quantity = Object.keys(recordsWithDependencies).length;
+			$('#confirmDeletion span.numberOfRecorsWithDependencies').text(quantity);
+			var container = $('#confirmDeletion .dependenciesDetails').html('');
+			for (var recordIdToDelete in recordsWithDependencies) {
+				var dependentRecords = recordsWithDependencies[recordIdToDelete].dependencies;
+				var valueOfRecordToDelete = recordsWithDependencies[recordIdToDelete].value;
+
+				// build text message
+				var numberOfRecordsText1;
+				var numberOfRecordsText2;
+				if (dependentRecords.length == 1) {
+					numberOfRecordsText1 = 'is 1 record';
+					numberOfRecordsText2 = 'it';
+				} else {
+					numberOfRecordsText1 = 'are ' + dependentRecords.length + ' records';
+					numberOfRecordsText2 = 'them';
+				}
+				var dependencyText = valueOfRecordToDelete + ' ' + nameTranslations[selectedTable].displayName;
+				var infoText = 'There '+numberOfRecordsText1+' dependend on ' + dependencyText
+								+ ', which you selected to delete. Where you would like to move '
+								+ numberOfRecordsText2 + '?';
+				container.append($('<p></p>').text(infoText));
+				
+				// build options list
+				var select = $('<select></select>').addClass('form-select').attr('id', recordIdToDelete);
+				if (alternatives.length == 0) {
+					// no alternative options, inform user
+					select.append($("<option></option>").val('unchange').text('No alternatives available.').addClass('d-none'));
+				} else {
+					// first  option is a message to user
+					select.append($("<option></option>").val('unchange').text('Please select alternative').addClass('d-none'));
+					alternatives.forEach(function(option) {
+						var text = option.name;
+						if ('location' in option) {
+							text += ' ('+option.location+')';
+						}
+						select.append($("<option></option>").val(option.id).text(text));
+					});
+				}
+				select.append($("<option></option>").val('unchange').text('Leave unchanged'));
+				container.append(select);
+
+				// spacer
+				container.append($('<hr>'));
+			};
+
 		} break;
-		case '400': {
-			deleteDBerror();
-		}
 	}
 };
 
 function deleteDBerror() {
 	// stop spinner and enable button
 	$('#confirmDeletion .deleteBtn').removeAttr('disabled').find('span').addClass('d-none');
+	$('#confirmDeletion .releaseDependenciesBtn').removeAttr('disabled').find('span').addClass('d-none');
 	// show error message
 	$('#confirmDeletion .alert-success').addClass('d-none');
 	$('#confirmDeletion .alert-warning.dependencies').addClass('d-none');
 	$('#confirmDeletion .alert-warning.error').removeClass('d-none');
+	$('#confirmDeletion .deleteMessage').addClass('d-none');
 };
 
 $('#confirmDeletion').on('hidden.bs.modal', function() {
@@ -1147,62 +1204,50 @@ $('#confirmDeletion').on('hidden.bs.modal', function() {
 });
 
 $('#confirmDeletion .editDependenciesBtn').on('click', function() {
-	// hide alerts and delete message
+	// hide alerts and reconfigure buttons to update dependencies
 	$('#confirmDeletion .alert-success').addClass('d-none');
 	$('#confirmDeletion .alert-warning').addClass('d-none');
-	$('#confirmDeletion .deleteMessage').addClass('d-none');
 	$('#confirmDeletion .editDependenciesBtn').addClass('d-none');
 	$('#confirmDeletion .releaseDependenciesBtn').removeClass('d-none');
-
-	// show list of dependencies
-	var container = $('#confirmDeletion .dependenciesDetails').html('');
-
-	for (var id in dependencies['withDependencies']) {
-		var dependentRecords = dependencies['withDependencies'][id].records;
-	
-		// build text message
-		var numberOfRecordsText;
-		if (dependentRecords.length == 1) {
-			numberOfRecordsText = 'is 1 record';
-		} else {
-			numberOfRecordsText = 'are ' + dependentRecords.length + ' records';
-		}
-		var dependencyText = dependentRecords[0][selectedTable] + ' ';
-		dependencyText += nameTranslations[selectedTable].displayName;
-		var infoText = 'There '+numberOfRecordsText+' dependend on ' + dependencyText + '. Where you would like to move them:';
-		var info = $('<p></p>').text(infoText);
-		
-		// build options list
-		var select = $('<select></select>').addClass('form-select ' + selectedTable).attr('id', id);
-		// check how many options are available
-		if (dependencies['alternatives'].length == 0) {
-			// no options, inform user
-			select.append($("<option></option>").text('No alternatives available.').addClass('d-none'));
-		} else {
-			// one option is to message user
-			select.append($("<option></option>").text('Please select alternative').addClass('d-none'));
-			dependencies['alternatives'].forEach(function(option) {
-				var text = option.name;
-				if ('location' in option) {
-					text += ' ('+option.location+')';
-				}
-				select.append($("<option></option>").val(option.id).text(text));
-			});
-		}
-		select.append($("<option></option>").val('unchanged').text('Leave unchanged'));
-
-		var spacer = $('<hr>');
-
-		container.append(info).append(select).append(spacer);
-
-	};
-
-	container.removeClass('d-none');
-
+	// show dependencies details/list
+	$('#confirmDeletion .dependenciesDetails').removeClass('d-none');
 });
 
 $('#confirmDeletion .releaseDependenciesBtn').on('click', function() {
-	console.log('try to move and delete');
+	
+	// show spinner and disable button
+	$(this).attr('disabled', 'true').find('span').removeClass('d-none');
+	
+	// read DOM
+	var selects = $('#confirmDeletion .dependenciesDetails').find('select');
+	var recordsToDelete = [];
+	var newDependency = {};
+	selects.each(function() {
+		var idOfRecordToDelete = $(this).attr('id');
+		recordsToDelete.push(idOfRecordToDelete);
+		var newIdOfDepencency = $(this).val();
+		if (newIdOfDepencency != 'unchange') {
+			newDependency[idOfRecordToDelete] = newIdOfDepencency;
+		}
+	});
 
+	// send request, the success and error function creates a loop
+	// so user can iterate dependencies as long as he want or break the loop any time.
+	$.ajax({
+		url: "php/deleteRecords.php",
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table: selectedTable,
+			records: recordsToDelete,
+			newDependency: newDependency,
+		},
+		success: deleteDBsuccess,
+		error: function(jqXHR, textStatus, errorThrown) {
+			console.log("request failed");
+			console.log(jqXHR);
+			deleteDBerror();
+		}
+	});
 });
 

@@ -691,24 +691,29 @@
 				</div>
 				<div class="modal-body">
 					<div class="container deleteMessage">
-						<p>Are you sure to delete <span class="number"></span> record(s) ?</p>
+						<p>Are you sure to delete <span class="numberOfRecordsToDelete"></span> record(s) ?</p>
 					</div>
 					<div class="container dependenciesDetails d-none">
 						<!-- items populated by Java script -->
 					</div>
-				</div>
-				<div class="modal-footer justify-content-evenly">
 					<div class="container-fluid alert alert-success d-none" role="alert">
 						Record(s) deleted succesfully.
 					</div>
 					<div class="container-fluid alert alert-warning d-none dependencies" role="alert">
-						Some records were not deleted, because other records depends on them.
+						<p><span class="numberOfRecorsWithDependencies"></span> record(s) was/were not deleted, because other record(s) depends on them.
 					</div>
 					<div class="container-fluid alert alert-warning d-none error" role="alert">
-						Error occured during record removal.<br>
-						You can try again.
+						<p>Error occured during record(s) removal.<p>
+						<p>You can try again.</p>
 					</div>
-					<button type="button" class="btn btn-warning releaseDependenciesBtn d-none">Confirm and Delete</button>
+				</div>
+				<div class="modal-footer justify-content-evenly">
+					<button type="button" 
+							class="btn btn-warning releaseDependenciesBtn d-none">
+							<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+							Update dependencies & Delete</button>
 					<button type="button" class="btn btn-primary editDependenciesBtn d-none">Edit dependencies</button>
 					<button type="button" 
 							class="btn btn-warning deleteBtn">
