@@ -47,7 +47,6 @@
                 $withDependencies[$id]['dependencies'] = $result['dependencies'];
                 $withDependencies[$id]['type'] = $result['type'];
                 $withDependencies[$id]['value'] = $result['value'];
-                //$withDependencies[$id]['test'] = $result['test'];
             } break;
             case 'error': {
                 array_push($error, $id); 
@@ -89,7 +88,7 @@
 
 	echo json_encode($output); 
 
-    // ############################################################################################ 
+    // ############################### Helper function ############################################
 
     function tryToRemoveRecord($conn, $table, $id) {
         
@@ -165,7 +164,7 @@
     }
 
     function removeRecord($conn, $table, $id) {
-        $query = 'DELETE FROM '.$table.' WHERE id = '.$id;
+        $query = 'DELETE FROM ' . $table . ' WHERE id = ' . $id;
         
         $dBresult = $conn->query($query);
         

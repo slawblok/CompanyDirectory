@@ -88,6 +88,14 @@
 									<i class="bi bi-layout-sidebar-inset"></i> Columns
 								</a>
 							</li>
+							<li class="nav-item">
+								<a class="nav-link" role="button"
+									title="About"
+									data-bs-toggle="modal" 
+									data-bs-target="#aboutModal">
+									<i class="bi bi-info"></i> About
+								</a>
+							</li>
 						</ul>
 					</div>
 				
@@ -724,6 +732,37 @@
 						</button>
 					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+			</div>
+		</div>
+
+		<!-- Modal About-->
+		<div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="aboutModalLabel">About</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<p>The Company Directory is web application, which allows for easy searching of staff, departments and location records by single or by multiple criteria.</p>
+					<p>It provides also functionality for creation, modification and removal records.</p>
+					<p>The front-end is built using:</p>
+					<ul>
+						<li>&copy; <a href="https://getbootstrap.com">Bootstrap</a></li>
+						<li>&copy; <a href="https://icons.getbootstrap.com">Bootstrap Icons</a></li>
+						<li>&copy; <a href="https://jquery.com">JQuery</a></li>
+						<li>&copy; <a href="https://jqueryui.com">JQuery UI</a></li>
+						<li>&copy; <a href="https://handlebarsjs.com">Handlebars</a></li>
+						<li>&copy; <a href="https://datatables.net/">DataTables</a></li>
+					</ul>
+					<p>The back-end is written in PHP and uses MySQLi extension to handle interaction with SQL database.</p>
+					<p>The Company Directory was created by Sławomir Blok as part of Coding traineeship on <a href="https://itcareerswitch.co.uk/" target="_blank">IT Carrer Switch</a></p>
+					<p><span class="text-decoration-underline">Note about stored informations:</span><br>The database contains only dummy information for presentation purpose only; thus does not contains any real personal details. User of this application is asked not to provide any sensitive information. The database administrator reserve the right to delete records and/or entire database anytime, without notification.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
 				</div>
 			</div>
 			</div>

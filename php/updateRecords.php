@@ -37,13 +37,13 @@
 		$query = null;
 		switch ($_POST['table']){
 			case 'personnel': {
-				$query = 'UPDATE personnel SET firstName = "' . $record['firstName'] . '", lastName = "' . $record['lastName'] . '", jobTitle = "' . $record['jobTitle'] . '", email = "' . $record['email'] . '", departmentID = "' . $record['departmentID'] . '" WHERE id = "' . $record['id'] . '"'; 	
+				$query = 'UPDATE personnel SET firstName = "' . $record['firstName'] . '", lastName = "' . $record['lastName'] . '", jobTitle = "' . $record['jobTitle'] . '", email = "' . $record['email'] . '", departmentID = ' . $record['departmentID'] . ' WHERE id = ' . $record['id']; 	
 			} break;
 			case 'department': {
-				$query = 'UPDATE department SET name = "' . $record['name'] . '", locationID = "' . $record['locationID'] . '" WHERE id = "' . $record['id'] . '"'; 	
+				$query = 'UPDATE department SET name = "' . $record['name'] . '", locationID = ' . $record['locationID'] . ' WHERE id = ' . $record['id']; 	
 			} break;
 			case 'location': {
-				$query = 'UPDATE location SET name = "' . $record['name'] . '" WHERE id = "' . $record['id'] . '"'; 
+				$query = 'UPDATE location SET name = "' . $record['name'] . '" WHERE id = ' . $record['id']; 
 			} break;
 		}
 		
