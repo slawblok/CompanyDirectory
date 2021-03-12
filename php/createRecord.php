@@ -10,29 +10,30 @@
 	include("config.php");
 	header('Content-Type: application/json; charset=UTF-8');
 
-	// create conection to DB
+    // create conection to DB
 	$conn = new mysqli($cd_host, $cd_user, $cd_password, $cd_dbname, $cd_port, $cd_socket);
 	if (mysqli_connect_errno()) {
 		$output['status']['code'] = "300";
 		$output['status']['name'] = "failure";
 		$output['status']['description'] = "database unavailable";
 		$output['status']['returnedIn'] = (microtime(true) - $executionStartTime) / 1000 . " ms";
-		$output['data'] = [];
 		mysqli_close($conn);
 		echo json_encode($output);
 		exit;
 	}	
-
+	
+    // create record
+	$record = $_POST['record'];
 	$query = null;
-	switch ($_GET['table']){
+	switch ($_POST['table']){
 		case 'personnel': {
-			$query = 'SELECT p.id, p.lastName, p.firstName, p.jobTitle, p.email, p.departmentID, d.name as department, d.locationID, l.name as location FROM personnel p LEFT JOIN department d ON (d.id = p.departmentID) LEFT JOIN location l ON (l.id = d.locationID) ORDER BY p.lastName, p.firstName, d.name, l.name';
-		} break;
+			$query = 'INSERT INTO personnel (id, firstName, lastName, jobTitle, email, departmentID) VALUES (NULL, "' . $record['firstName'] . '", "' . $record['lastName'] . '", "' . $record['jobTitle'] . '", "' . $record['email'] . '", "' . $record['departmentID'] . '")';
+        } break;
 		case 'department': {
-			$query = 'SELECT d.id, d.name, d.locationID, l.name as location FROM department d LEFT JOIN location l ON (l.id = d.locationID) ORDER BY d.name, l.name';
-		} break;
+            $query = 'INSERT INTO department (id, name, locationID) VALUES (NULL, "' . $record['name'] . '", "' . $record['locationID'] . '")';
+        } break;
 		case 'location': {
-			$query = 'SELECT id, name FROM location ORDER BY name';
+            $query = 'INSERT INTO location (id, name) VALUES (NULL, "' . $record['name'] . '")'; 
 		} break;
 	}
 	
@@ -40,20 +41,29 @@
 	if (!$result) {
 		$output['status']['code'] = "400";
 		$output['status']['name'] = "executed";
-		$output['status']['description'] = "query failed";	
-		$output['data'] = [];
+		$output['status']['description'] = "query failed";
 		mysqli_close($conn);
 		echo json_encode($output); 
 		exit;
 	}
-   
-   	$data = [];
-	while ($row = mysqli_fetch_assoc($result)) {
-		array_push($data, $row);
-	}
-	$output['data'] = $data;
 
-	$output['status']['code'] = "200";
+    // get id of last created record in scope
+    $query = 'SELECT LAST_INSERT_ID()';
+    
+    $result = $conn->query($query);
+    if (!$result) {
+		$output['status']['code'] = "400";
+		$output['status']['name'] = "executed";
+		$output['status']['description'] = "query failed";
+		mysqli_close($conn);
+		echo json_encode($output); 
+		exit;
+	}
+
+    $data = mysqli_fetch_assoc($result)['LAST_INSERT_ID()'];
+    $output['record']['id'] = $data;
+
+	$output['status']['code'] = "201";
 	$output['status']['name'] = "ok";
 	$output['status']['description'] = "success";
 	$output['status']['returnedIn'] = (microtime(true) - $executionStartTime) / 1000 . " ms";

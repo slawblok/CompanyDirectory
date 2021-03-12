@@ -98,7 +98,7 @@ $('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
 // #                        Displaying records                                  # 
 // ##############################################################################
 
-function cloaseRecordDetailsAtDesktop() {
+function claseRecordDetailsAtDesktop() {
 	Object.keys(nameTranslations).forEach( key => {
 		$('.recordDetails.'+key+'.desktop').removeClass('d-md-block');
 	})
@@ -106,7 +106,7 @@ function cloaseRecordDetailsAtDesktop() {
 	recordDetailsToPreviewMode();
 }
 
-$('.recordDetails.desktop button.btn-close').on('click', cloaseRecordDetailsAtDesktop);
+$('.recordDetails.desktop button.btn-close').on('click', claseRecordDetailsAtDesktop);
 
 $('#showRecordsBtnM').on('click', function() {
 	closeColOrderPopover();
@@ -161,44 +161,37 @@ function displaySelectedRecordsDetails(){
 	});
 
 	// update DOM with record details
-	var desktopContainer = $('.recordDetails.'+selectedTable+'.desktop');
-	var mobileContainer = $('.recordDetails.'+selectedTable+'.mobile');
+	var container = $('.recordDetails.'+selectedTable);
 	
-	var recordName = nameTranslations[selectedTable].displayName;
-	desktopContainer.find('.modal-title span').text(recordName);
-	mobileContainer.find('.modal-title span').text(recordName);
-
-	var recordId = recordCombined.id;
-	desktopContainer.find('#recordId').text(recordId);
-	mobileContainer.find('#recordId').text(recordId);
+	container.find('.modal-title span').text(nameTranslations[selectedTable].displayName);
+	
+	container.find('#recordId').text(recordCombined.id);
 
 	var columnsList = nameTranslations[selectedTable].columnsList;
 	for (var key in columnsList) {
 		var value = recordCombined[key];
 		var columnName = columnsList[key];
-		desktopContainer.find('input.'+key).val(value).attr('placeholder', columnName+' placeholder');
-		desktopContainer.find('span.'+key).text(value);
-		desktopContainer.find('label.'+key).text(columnName);
-		
-		mobileContainer.find('input.'+key).val(value).attr('placeholder', columnName+' placeholder');
-		mobileContainer.find('span.'+key).text(value);
-		mobileContainer.find('label.'+key).text(columnName);
+		container.find('input.'+key).val(value).attr('placeholder', columnName+' placeholder');
+		container.find('span.'+key).text(value);
+		container.find('label.'+key).text(columnName);
 	};
 
 	if ('departmentID' in recordCombined) {
-		desktopContainer.find('span.'+'department').attr('id', recordCombined.departmentID);
-		mobileContainer.find('span.'+'department').attr('id', recordCombined.departmentID);
+		container.find('span.'+'department').attr('id', recordCombined.departmentID);
 	}
 	if ('locationID' in recordCombined) {
-		desktopContainer.find('span.'+'location').attr('id', recordCombined.locationID);
-		mobileContainer.find('span.'+'location').attr('id', recordCombined.locationID);
+		container.find('span.'+'location').attr('id', recordCombined.locationID);
 	}
+
+	recordDetailsToPreviewMode();
 }
 
 function displayRecordsList(records) {
 	// hide modals, popup
-	cloaseRecordDetailsAtDesktop();
+	claseRecordDetailsAtDesktop();
 	closeColOrderPopover();
+	var openModal = bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]);
+	if (openModal != null) openModal.hide();
 
 	// clear search box
 	$('#searchBox > input').val('');
@@ -265,7 +258,7 @@ function displayRecordsList(records) {
 			$('#showRecordsBtnM').removeClass('d-none');
 		} else {
 			// hide modals, which shows record details at Desktop
-			cloaseRecordDetailsAtDesktop();
+			claseRecordDetailsAtDesktop();
 			// hide button for Mobile
 			$('#showRecordsBtnM').addClass('d-none');
 		}
@@ -629,9 +622,17 @@ $('#filterRecordsBtnM').on('click', function() {
 
 function recordDetailsToEditMode() {
 	var content = $('.recordDetails');
+	// hide all alerts
+	content.find('.alert-info').addClass('d-none');
+	content.find('.createSuccess').addClass('d-none');
+	content.find('.createFailed').addClass('d-none');
+	// switch fields to edit
 	content.find('.editable').removeClass('d-none');
 	content.find('.preview').addClass('d-none');
+	content.find('input, select').removeAttr('disabled');
+	// show Confirm  and Delete buttons only
 	content.find('.editBtn').addClass('d-none');
+	content.find('.saveBtn').addClass('d-none');
 	content.find('.confirmBtn').removeClass('d-none');
 	content.find('.duplicateBtn').addClass('d-none');
 	content.find('.deleteBtn').removeClass('d-none');
@@ -645,9 +646,17 @@ $('.recordDetails').find('.editBtn').on('click', function() {
 function recordDetailsToPreviewMode() {
 	// configure record details modal to preview mode
 	var content = $('.recordDetails');
+	// hide all alerts
+	content.find('.alert-info').addClass('d-none');
+	content.find('.createSuccess').addClass('d-none');
+	content.find('.createFailed').addClass('d-none');
+	// switch fields to preview
 	content.find('.preview').removeClass('d-none');
 	content.find('.editable').addClass('d-none');
+	content.find('input, select').removeAttr('disabled');
+	// show Edit and Duplicate buttons only
 	content.find('.editBtn').removeClass('d-none');
+	content.find('.saveBtn').addClass('d-none');
 	content.find('.confirmBtn').addClass('d-none');
 	content.find('.duplicateBtn').removeClass('d-none');
 	content.find('.deleteBtn').addClass('d-none');
@@ -662,6 +671,10 @@ function populateSelectOptions(records, table) {
 	var select = $('select.'+table);
 	// clear any existing options
 	select.html('');
+
+	// first option is message to user
+	select.append($("<option></option>").val('pleaseSelect').text('Please select').addClass('d-none'));
+
 	records.data.forEach(function(element) {
 		// define option
 		var option = $("<option></option>");
@@ -1008,6 +1021,7 @@ function duplicateDBsuccess(response) {
 	$('#confirmDuplication .duplicateBtn').removeAttr('disabled').find('span').addClass('d-none');
 	if (response.status.code == "201") {
 		// show OK message and reconfigure buttons of confirmation modal
+		$('#confirmDuplication .duplicationMessage').addClass('d-none');
 		$('#confirmDuplication .alert-success').removeClass('d-none');
 		$('#confirmDuplication .alert-warning').addClass('d-none');
 		$('#confirmDuplication .duplicateBtn').addClass('d-none');
@@ -1030,6 +1044,7 @@ function duplicateDBerror() {
 
 $('#confirmDuplication').on('hidden.bs.modal', function() {
 	// return confirmation modal to default state
+	$('#confirmDuplication .duplicationMessage').removeClass('d-none');
 	$('#confirmDuplication .alert-success').addClass('d-none');
 	$('#confirmDuplication .alert-warning').addClass('d-none');
 	$('#confirmDuplication .duplicateBtn').removeClass('d-none');
@@ -1158,7 +1173,7 @@ function deleteDBsuccess(response) {
 					// no alternative options, inform user
 					select.append($("<option></option>").val('unchange').text('No alternatives available.').addClass('d-none'));
 				} else {
-					// first  option is a message to user
+					// first option is a message to user
 					select.append($("<option></option>").val('unchange').text('Please select alternative').addClass('d-none'));
 					alternatives.forEach(function(option) {
 						var text = option.name;
@@ -1168,6 +1183,7 @@ function deleteDBsuccess(response) {
 						select.append($("<option></option>").val(option.id).text(text));
 					});
 				}
+				// last option is unchanged
 				select.append($("<option></option>").val('unchange').text('Leave unchanged'));
 				container.append(select);
 
@@ -1251,3 +1267,139 @@ $('#confirmDeletion .releaseDependenciesBtn').on('click', function() {
 	});
 });
 
+// ##############################################################################
+// #                             Adding new record                              #
+// ##############################################################################
+
+$('#addRecordBtnD').on('click', function() {
+	recordDetailsToCreateMode();
+	// show panel
+	$('.recordDetails.'+selectedTable+'.desktop').addClass('d-md-block');
+	recalculateContentHeight();
+});
+
+$('#addRecordBtnM').on('click', function() {
+	closeColOrderPopover();
+	recordDetailsToCreateMode();
+	// show panel
+	new bootstrap.Modal(document.getElementsByClassName(selectedTable+' mobile')[0]).show();
+});
+
+function recordDetailsToCreateMode() {
+	
+	// clear fields
+	var container = $('.recordDetails.'+selectedTable);
+	container.find('.modal-title span').text(nameTranslations[selectedTable].displayName);
+	container.find('#recordId').text('new');
+	var columnsList = nameTranslations[selectedTable].columnsList;
+	for (var key in columnsList) {
+		var value = '';
+		var columnName = columnsList[key];
+		container.find('input.'+key).val(value).attr('placeholder', columnName+' placeholder');
+		container.find('span.'+key).text(value).attr('id', 'pleaseSelect');
+		container.find('label.'+key).text(columnName);
+	};
+
+	// download options
+	switch(selectedTable) {
+		case 'personnel': {
+			getRecords('department', 'toSelectOptions');
+		} break;
+		case 'department': {
+			getRecords('location', 'toSelectOptions');
+		}
+	}
+
+	// configure record details modal to create mode
+	// hide all alerts
+	container.find('.alert-info').addClass('d-none');
+	container.find('.createSuccess').addClass('d-none');
+	container.find('.createFailed').addClass('d-none');
+	// switch fields to edit
+	container.find('.editable').removeClass('d-none');
+	container.find('.preview').addClass('d-none');
+	container.find('input, select').removeAttr('disabled');
+	// show Save button only
+	container.find('.editBtn').addClass('d-none');
+	container.find('.saveBtn').removeClass('d-none');
+	container.find('.confirmBtn').addClass('d-none');
+	container.find('.duplicateBtn').addClass('d-none');
+	container.find('.deleteBtn').addClass('d-none');
+}
+
+$('.recordDetails.personnel').find('.saveBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	// read DOM to local variably
+	var newRecord = {};
+	newRecord['firstName'] = container.find('input.firstName').val()
+	newRecord['lastName'] = container.find('input.lastName').val();
+	newRecord['jobTitle'] = container.find('input.jobTitle').val();
+	newRecord['email'] = container.find('input.email').val();
+	newRecord['departmentID'] = container.find('select.department').val();
+	createRecord(newRecord);
+});
+
+$('.recordDetails.department').find('.saveBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	// read DOM to local variably
+	var newRecord = {};	
+	newRecord['name'] = container.find('input.name').val();
+	newRecord['locationID'] = container.find('select.location').val();
+	createRecord(newRecord);
+});
+
+$('.recordDetails.location').find('.saveBtn').on('click', function() {
+	var container = $(this).closest('.recordDetails');
+	// read DOM to local variably
+	var newRecord = {};
+	newRecord['name'] = container.find('input.name').val();
+	createRecord(newRecord);
+});
+
+function createRecord(newRecord) {
+	// show spinner and disable save button
+	$('.recordDetails .saveBtn').attr('disabled', 'true').find('span').removeClass('d-none');
+	$.ajax({
+		url: "php/createRecord.php",
+		type: 'POST',
+		dataType: 'json',
+		data: {
+			table: selectedTable,
+			record: newRecord
+		},	
+		success: createDBsuccess,
+		error: function(jqXHR, textStatus, errorThrown) {
+			console.log("request failed");
+			console.log(jqXHR);
+			createDBerror();
+		}
+	});
+};
+
+function createDBsuccess(response) {
+	// stop spinner, enable and hide confirm button
+	$('.recordDetails .saveBtn').removeAttr('disabled').find('span').addClass('d-none');
+	if (response.status.code == "201") {
+		// show success message
+		$('.recordDetails').find('.createSuccess').removeClass('d-none');
+		$('.recordDetails').find('.createFailed').addClass('d-none');
+		// hide save button
+		$('.recordDetails .saveBtn').addClass('d-none');
+		// disable editing
+		$('.recordDetails').find('input, select').attr('disabled', 'true');
+		// show new record Id
+		$('.recordDetails').find('#recordId').text(response.record.id);
+		recalculateContentHeight();
+	} else {
+		createDBerror();
+	}
+};
+
+function createDBerror() {
+	// stop spinner and enable confirm button
+	$('.recordDetails .saveBtn').removeAttr('disabled').find('span').addClass('d-none');
+	// show warning message
+	$('.recordDetails').find('.createFailed').removeClass('d-none');
+	$('.recordDetails').find('.createSuccess').addClass('d-none');
+	recalculateContentHeight();
+}

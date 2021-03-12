@@ -99,7 +99,7 @@
 						</ul>
 					</div>
 				
-					<!-- below section (Columns, Filter and Add button) are only on Desktop -->
+					<!-- below section (Filter and Add button) are only on Desktop -->
 					<div class="navbar-nav d-none d-md-flex flex-nowrap order-3">
 						<a class="nav-link text-nowrap" role="button" id="filterRecordsBtnD" 
 								title="Filter Records">
@@ -137,8 +137,15 @@
 				<!-- Section for Desktop to display presons details -->
 				<div class="container recordDetails personnel desktop d-none border-top border-4 rounded-top">
 					<div class="row">
-						<div class="alert alert-info d-none text-center" role="alert">
+						<div class="alert alert-info d-none text-end" role="alert">
 							You had not made any changes to selected record(s).
+						</div>
+						<div class="alert alert-success createSuccess d-none text-end" role="alert">
+							Record was created.
+						</div>
+						<div class="alert alert-warning createFailed d-none text-end" role="alert">
+							Error occurred during record creation.<br>
+							You can try again.
 						</div>
 					</div>
 					<div class="row align-items-center">
@@ -151,7 +158,11 @@
 									<button type="button" class="btn mx-2 my-2 btn-primary duplicateBtn">Duplicate record</button>
 									<button type="button" class="btn mx-2 my-2 btn-danger deleteBtn d-none">Delete record</button>
 									<button type="button" class="btn mx-2 my-2 btn-primary editBtn">Edit</button>
-									<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+									<button type="button" class="btn mx-2 my-2 btn-primary saveBtn d-none">
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										Create
+									</button>
+									<button type="button" class="btn mx-2 my-2 btn-success confirmBtn d-none">Confirm</button>
 									<button type="button" class="btn-close mx-2 my-2" aria-label="Close"></button>
 								</div>
 							</div>
@@ -224,8 +235,15 @@
 				<!-- Section for Desktop to display department details -->
 				<div class="container recordDetails department desktop d-none border-top border-4 rounded-top">
 					<div class="row">
-						<div class="alert alert-info d-none text-center" role="alert">
+						<div class="alert alert-info d-none text-end" role="alert">
 							You had not made any changes to selected record(s).
+						</div>
+						<div class="alert alert-success createSuccess d-none text-end" role="alert">
+							Record was created.
+						</div>
+						<div class="alert alert-warning createFailed d-none text-end" role="alert">
+							Error occurred during record creation.<br>
+							You can try again.
 						</div>
 					</div>
 					<div class="row align-items-center">
@@ -238,7 +256,11 @@
 									<button type="button" class="btn mx-2 my-2 btn-primary duplicateBtn">Duplicate record</button>
 									<button type="button" class="btn mx-2 my-2 btn-danger deleteBtn d-none">Delete record</button>
 									<button type="button" class="btn mx-2 my-2 btn-primary editBtn">Edit</button>
-									<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+									<button type="button" class="btn mx-2 my-2 btn-primary saveBtn d-none">
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										Create
+									</button>
+									<button type="button" class="btn mx-2 my-2 btn-success confirmBtn d-none">Confirm</button>
 									<button type="button" class="btn-close mx-2 my-2" aria-label="Close"></button>
 								</div>
 							</div>
@@ -284,8 +306,15 @@
 				<!-- Section for Desktop to display location details -->
 				<div class="container recordDetails location desktop d-none border-top border-4 rounded-top">
 					<div class="row">
-						<div class="alert alert-info d-none text-center" role="alert">
+						<div class="alert alert-info d-none text-end" role="alert">
 							You had not made any changes to selected record(s).
+						</div>
+						<div class="alert alert-success createSuccess d-none text-end" role="alert">
+							Record was created.
+						</div>
+						<div class="alert alert-warning createFailed d-none text-end" role="alert">
+							Error occurred during record creation.<br>
+							You can try again.
 						</div>
 					</div>
 					<div class="row align-items-center">
@@ -298,7 +327,11 @@
 									<button type="button" class="btn mx-2 my-2 btn-primary duplicateBtn">Duplicate record</button>
 									<button type="button" class="btn mx-2 my-2 btn-danger deleteBtn d-none">Delete record</button>
 									<button type="button" class="btn mx-2 my-2 btn-primary editBtn">Edit</button>
-									<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
+									<button type="button" class="btn mx-2 my-2 btn-primary saveBtn d-none">
+										<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+										Create
+									</button>
+									<button type="button" class="btn mx-2 my-2 btn-success confirmBtn d-none">Confirm</button>
 									<button type="button" class="btn-close mx-2 my-2" aria-label="Close"></button>
 								</div>
 							</div>
@@ -419,8 +452,19 @@
 					<div class="container-fluid alert alert-info d-none" role="alert">
 						You had not made any changes to selected record(s).
 					</div>
+					<div class="container-fluid alert alert-success createSuccess d-none" role="alert">
+						Record was created.
+					</div>
+					<div class="container-fluid alert alert-warning createFailed d-none" role="alert">
+						Error occurred during record creation.<br>
+						You can try again.
+					</div>
 					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
 					<button type="button" class="btn btn-primary editBtn">Edit</button>
+					<button type="button" class="btn btn-primary saveBtn d-none">
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						Create
+					</button>
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
@@ -472,8 +516,19 @@
 					<div class="container-fluid alert alert-info d-none" role="alert">
 						You had not made any changes to selected record(s).
 					</div>
+					<div class="container-fluid alert alert-success createSuccess d-none" role="alert">
+						Record was created.
+					</div>
+					<div class="container-fluid alert alert-warning createFailed d-none" role="alert">
+						Error occurred during record creation.<br>
+						You can try again.
+					</div>
 					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
 					<button type="button" class="btn btn-primary editBtn">Edit</button>
+					<button type="button" class="btn btn-primary saveBtn d-none">
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						Create
+					</button>
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
@@ -516,8 +571,19 @@
 					<div class="container-fluid alert alert-info d-none" role="alert">
 						You had not made any changes to selected record(s).
 					</div>
+					<div class="container-fluid alert alert-success createSuccess d-none" role="alert">
+						Record was created.
+					</div>
+					<div class="container-fluid alert alert-warning createFailed d-none" role="alert">
+						Error occurred during record creation.<br>
+						You can try again.
+					</div>
 					<button type="button" class="btn btn-success confirmBtn d-none">Confirm</button>
 					<button type="button" class="btn btn-primary editBtn">Edit</button>
+					<button type="button" class="btn btn-primary saveBtn d-none">
+						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+						Create
+					</button>
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back</button>
 				</div>
 			</div>
@@ -646,7 +712,7 @@
 								  role="status" 
 								  aria-hidden="true"></span>
 							Update
-						</button>
+					</button>
 					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
 				</div>
@@ -663,11 +729,9 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					<div class="container">
+					<div class="container duplicationMessage">
 						<p>Are you sure to duplicate <span class="number"></span> record(s) ?</p>
 					</div>
-				</div>
-				<div class="modal-footer justify-content-evenly">
 					<div class="container-fluid alert alert-success d-none" role="alert">
 						Record(s) duplicated succesfully.
 					</div>
@@ -675,13 +739,15 @@
 						Records were not duplicated due to an error.<br>
 						You can try again.
 					</div>
+				</div>
+				<div class="modal-footer justify-content-evenly">
 					<button type="button" 
 							class="btn btn-warning duplicateBtn">
 							<span class="spinner-border spinner-border-sm d-none" 
 								  role="status" 
 								  aria-hidden="true"></span>
 							Duplicate
-						</button>
+					</button>
 					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
 				</div>
@@ -721,7 +787,8 @@
 							<span class="spinner-border spinner-border-sm d-none" 
 								  role="status" 
 								  aria-hidden="true"></span>
-							Update dependencies & Delete</button>
+							Update dependencies & Delete
+					</button>
 					<button type="button" class="btn btn-primary editDependenciesBtn d-none">Edit dependencies</button>
 					<button type="button" 
 							class="btn btn-warning deleteBtn">
@@ -729,7 +796,7 @@
 								  role="status" 
 								  aria-hidden="true"></span>
 							Delete
-						</button>
+					</button>
 					<button type="button" class="btn btn-secondary backBtn" data-bs-dismiss="modal">Back</button>
 					<button type="button" class="btn btn-secondary closeBtn d-none" data-bs-dismiss="modal">Close</button>
 				</div>
