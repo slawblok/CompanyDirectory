@@ -4,8 +4,8 @@
 	// http://localhost/companydirectory/libs/php/getAll.php
 
 	// remove next two lines for production
-	ini_set('display_errors', 'On');
-	error_reporting(E_ALL);
+	//ini_set('display_errors', 'On');
+	//error_reporting(E_ALL);
 	$executionStartTime = microtime(true);
 	include("config.php");
 	header('Content-Type: application/json; charset=UTF-8');
