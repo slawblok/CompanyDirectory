@@ -73,9 +73,12 @@
 					<div class="collapse navbar-collapse order-md-1" id="navbarSupportedContent">
 						<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 						  	<li class="nav-item dropdown text-md-center" id="tableSelectionDropdown">
-								<a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								<a class="nav-link dropdown-toggle text-nowrap" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+									<span class="spinner-border spinner-border-sm d-none loadingRecord" 
+											role="status" 
+											aria-hidden="true"></span>
 									<i class="bi bi-folder"></i>
-									<span>
+									<span class="nameOfSelectedTable">
 									<!-- text populated on page load -->
 									</span>
 								</a>
@@ -716,13 +719,25 @@
 				</div>
 				<div class="row justify-content-evenly">
 					<div class="col-auto mt-3">
-						<button type="button" class="btn btn-secondary clearAllBtn">Clear All</button>
+						<button type="button" 
+								class="btn btn-secondary clearAllBtn">
+								<span class="spinner-border spinner-border-sm d-none" 
+										role="status" 
+										aria-hidden="true"></span>
+								Clear All
+						</button>
 					</div>
 					<div class="col-auto mt-3">
 						<button type="button" class="btn btn-secondary closeBtn">Close</button>
 					</div>
 					<div class="col-auto mt-3">
-						<button type="button" class="btn btn-primary applyBtn">Apply</button>
+						<button type="button" 
+								class="btn btn-primary applyBtn">
+								<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+								Apply
+						</button>
 					</div>
 				</div>
 			</div>
@@ -756,9 +771,23 @@
 					</div>
 				</div>
 				<div class="modal-footer justify-content-evenly">
-					<button type="button" class="btn btn-secondary clearAllBtn" data-bs-dismiss="modal">Clear All</button>
+					<button type="button" 
+							class="btn btn-secondary clearAllBtn" 
+							data-bs-dismiss="modal">
+							<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+							Clear All
+					</button>
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-					<button type="button" class="btn btn-primary applyBtn" data-bs-dismiss="modal">Apply</button>
+					<button type="button" 
+							class="btn btn-primary applyBtn" 
+							data-bs-dismiss="modal">
+							<span class="spinner-border spinner-border-sm d-none" 
+								  role="status" 
+								  aria-hidden="true"></span>
+							Apply
+					</button>
 				</div>
 			</div>
 			</div>

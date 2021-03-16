@@ -39,6 +39,8 @@ var activeFilters = [];
 // ##############################################################################
 
 function getRecords(requestedTable, target, filters){
+	// show spinner
+	$('.loadingRecord').removeClass('d-none');
 	// request all records
 	$.ajax({
 		url: "php/getRecords.php",
@@ -49,6 +51,8 @@ function getRecords(requestedTable, target, filters){
 			filters: filters
 		},	
 		success: function(response) {
+			// stop spinner
+			$('.loadingRecord').addClass('d-none');
 			switch (target) {
 				case 'toTable': {
 					selectedTable = requestedTable;
@@ -60,6 +64,8 @@ function getRecords(requestedTable, target, filters){
 			}
 		},
 		error: function(jqXHR, textStatus, errorThrown) {
+			// stop spinner
+			$('.loadingRecord').addClass('d-none');
 			console.log("request failed");
 			console.log(jqXHR);
 		}
@@ -98,6 +104,8 @@ $('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
 	if (newTable != selectedTable) {
 		// if user change table to different (not refreshed), then clear filters
 		clearAllFilters();
+		// also prevent situation where user just created record and want to switch to different table
+		closeRecordDetailsAtDesktop();
 	}
 	getRecords(event.target.attributes.value.value, 'toTable', activeFilters);
 });
@@ -139,10 +147,6 @@ function closeRecordDetailsAtDesktop() {
 		$('.recordDetails.'+key+'.desktop').removeClass('d-md-block');
 	})
 	recalculateContentHeight();
-	// check if new record was created
-	if (!$('.recordDetails').find('.createSuccess').hasClass('d-none')) {
-		getRecords(selectedTable, 'toTable', activeFilters);
-	}
 	recordDetailsToPreviewMode();
 }
 
@@ -228,13 +232,22 @@ function displaySelectedRecordsDetails(){
 }
 
 function displayRecordsList(records) {
-	// hide modals, popup
-	closeRecordDetailsAtDesktop();
+	// hide records details if different then cerod creation success
+	// check if new record was created, then do not close Record Details
+	if ($('.recordDetails.' + selectedTable + '.desktop').find('.createSuccess').hasClass('d-none')) {
+		closeRecordDetailsAtDesktop();
+	}
+	if ($('.recordDetails' + selectedTable + '.mobile').find('.createSuccess').hasClass('d-none')) {
+		var openModal = bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]);
+		if (openModal != null) openModal.hide();
+	}
+
+	// hide spinner for filters
+	$('.filter .spinner-border').addClass('d-none');
+	
 	closeColOrderPopover();
 	closeFilterPopover();
-	var openModal = bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]);
-	if (openModal != null) openModal.hide();
-
+	
 	// clear search box
 	$('#searchBox > input').val('');
 
@@ -315,7 +328,7 @@ function displayRecordsList(records) {
 		}
 	});
 	
-	$('#tableSelectionDropdown > a > span').text(nameTranslations[selectedTable].displayName);
+	$('.nameOfSelectedTable').text(nameTranslations[selectedTable].displayName);
 }
 
 function getHeighConsumedByOtherElements(element) {
@@ -711,6 +724,8 @@ function initiateFilterPopover() {
 		content.find('.applyBtn').on('click', applyFilter);
 		content.find('.clearAllBtn').on('click', function() {
 			clearAllFilters();
+			// show spinner
+			$(this).children('span').removeClass('d-none');
 			getRecords(selectedTable, 'toTable', activeFilters);
 		});
 		applyActionsForFilters(content);
@@ -799,11 +814,15 @@ function applyFilter() {
 	if (numberOfFilters == 0) numberOfFilters = '';
 	$('#filterRecordsBtnD span').text(numberOfFilters);
 	$('#filterRecordsBtnM span').text(numberOfFilters);
+	// show spinner
+	$(this).children('span').removeClass('d-none');
 	getRecords(selectedTable, 'toTable', activeFilters);
 }
 
 $('.filter.mobile .clearAllBtn').on('click', function() {
 	clearAllFilters();
+	// show spinner
+	$(this).children('span').removeClass('d-none');
 	getRecords(selectedTable, 'toTable', activeFilters);
 });
 
@@ -1182,6 +1201,20 @@ $('#confirmDuplication .btn-close, #confirmDuplication .backBtn').on('click', fu
 
 $('#confirmDuplication .duplicateBtn').on('click', function() {
 	var selectedRecords = getSelectedRecords();
+	selectedRecords.forEach(function(record) {
+		switch(selectedTable) {
+			case 'personnel': {
+				record.firstName += ' (copy)';
+			} break;
+			case 'department': {
+				record.name += ' (copy)';
+			} break;
+			case 'location': {
+				record.name += ' (copy)';
+			} break;
+		}
+	});
+	
 	// show spinner and disable duplicate button
 	$(this).attr('disabled', 'true').find('span').removeClass('d-none');
 	$.ajax({
@@ -1576,6 +1609,8 @@ function createDBsuccess(response) {
 		// show new record Id
 		$('.recordDetails').find('#recordId').text(response.record.id);
 		recalculateContentHeight();
+		// reload table
+		getRecords(selectedTable, 'toTable', activeFilters);
 	} else {
 		createDBerror();
 	}
