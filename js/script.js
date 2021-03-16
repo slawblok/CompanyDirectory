@@ -285,7 +285,8 @@ function displayRecordsList(records) {
 			style: 'multi+shift'
 		},
 		searchPanes: true,
-		dom: 'lrtip'			// remove 'i' to stop displaying bottom infor
+		dom: 'lrtip',			// remove 'i' to stop displaying bottom infor
+		keys: true
 	})
 	.on('select', function () {
 		updateSelectInfo();
