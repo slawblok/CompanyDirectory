@@ -23,16 +23,37 @@
 		exit;
 	}	
 
+	// get filterst from POST if exists
+	$filters = [];
+	if (array_key_exists('filters', $_POST)) {
+		$filters = $_POST['filters'];
+	}
+
 	$query = null;
-	switch ($_GET['table']){
+	switch ($_POST['table']){
 		case 'personnel': {
-			$query = 'SELECT p.id, p.lastName, p.firstName, p.jobTitle, p.email, p.departmentID, d.name as department, d.locationID, l.name as location FROM personnel p LEFT JOIN department d ON (d.id = p.departmentID) LEFT JOIN location l ON (l.id = d.locationID) ORDER BY p.lastName, p.firstName, d.name, l.name';
+			// select and left join
+			$query = 'SELECT p.id, p.lastName, p.firstName, p.jobTitle, p.email, p.departmentID, d.name as department, d.locationID, l.name as location FROM personnel p LEFT JOIN department d ON (d.id = p.departmentID) LEFT JOIN location l ON (l.id = d.locationID)';
+			// apply filters
+			$query .= applyFilters($filters);
+			// order
+			$query .= ' ORDER BY p.lastName, p.firstName, d.name, l.name';
 		} break;
 		case 'department': {
-			$query = 'SELECT d.id, d.name, d.locationID, l.name as location FROM department d LEFT JOIN location l ON (l.id = d.locationID) ORDER BY d.name, l.name';
+			// select and left join
+			$query = 'SELECT d.id, d.name, d.locationID, l.name as location FROM department d LEFT JOIN location l ON (l.id = d.locationID)';
+			// apply filters
+			$query .= applyFilters($filters);
+			// order
+			$query .= ' ORDER BY d.name, l.name';
 		} break;
 		case 'location': {
-			$query = 'SELECT id, name FROM location ORDER BY name';
+			// select
+			$query = 'SELECT id, name FROM location';
+			// apply filters
+			$query .= applyFilters($filters);
+			// order
+			$query .=' ORDER BY name';
 		} break;
 	}
 	
@@ -41,17 +62,17 @@
 		$output['status']['code'] = "400";
 		$output['status']['name'] = "executed";
 		$output['status']['description'] = "query failed";	
-		$output['data'] = [];
+		$output['records'] = [];
 		mysqli_close($conn);
 		echo json_encode($output); 
 		exit;
 	}
    
-   	$data = [];
+   	$records = [];
 	while ($row = mysqli_fetch_assoc($result)) {
-		array_push($data, $row);
+		array_push($records, $row);
 	}
-	$output['data'] = $data;
+	$output['records'] = $records;
 
 	$output['status']['code'] = "200";
 	$output['status']['name'] = "ok";
@@ -59,5 +80,40 @@
 	$output['status']['returnedIn'] = (microtime(true) - $executionStartTime) / 1000 . " ms";
 	mysqli_close($conn);
 	echo json_encode($output); 
+
+	// ############################### Helper function ############################################
+
+	function applyFilters($filters) {
+		$query = '';
+		// apply filters if exists
+		if (count($filters) > 0) {
+			$query .= ' WHERE';
+			$addAnd = false;
+			foreach ($filters as $filter) {
+				// 1st run does not add 'and' at the begining, but followings runs does 
+				if ($addAnd) {
+					$query .= ' and';
+				}
+				$addAnd = true;
+				// convert 'key'
+				$key;
+				switch($filter['key']) {
+					case 'department': {
+						$key = 'd.name';
+					} break;
+					case 'location': {
+						$key = 'l.name';
+					} break;
+					default: {
+						$key = 'p.'.$filter['key'];
+					}
+				}
+				// build query for given filter
+				$query .= ' ' . $key . ' LIKE ' . '"%' . $filter['query'] . '%"';
+			}
+		}
+		return $query;
+	}
+
 
 ?>

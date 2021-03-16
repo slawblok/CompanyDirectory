@@ -32,28 +32,30 @@ var nameTranslations = {
 var dataTable;
 var selectedTable;
 var editedRecords;
+var activeFilters = [];
 
 // ##############################################################################
 // #                        General section                                     # 
 // ##############################################################################
 
-function getRecords(requestedTable, target){
+function getRecords(requestedTable, target, filters){
 	// request all records
 	$.ajax({
 		url: "php/getRecords.php",
-		type: 'GET',
+		type: 'POST',
 		dataType: 'json',
 		data: {
-			table: requestedTable
+			table: requestedTable,
+			filters: filters
 		},	
 		success: function(response) {
 			switch (target) {
 				case 'toTable': {
 					selectedTable = requestedTable;
-					displayRecordsList(response);
+					displayRecordsList(response.records);
 				} break;
 				case 'toSelectOptions': {
-					populateSelectOptions(response, requestedTable);
+					populateSelectOptions(response.records, requestedTable);
 				} break;
 			}
 		},
@@ -76,11 +78,12 @@ $(window).on('load', function () {
 		$('#tableSelectionDropdown > ul').append(listItem);
 	}
 	
-	// load default table
-	getRecords('personnel', 'toTable');
+	// load default table, without filters
+	getRecords('personnel', 'toTable', []);
 
 	initiateColOrderPopover();
-	
+	initiateFilterPopover();
+
 	// display preloader
 	if ($('#preloader').length) {
 		$('#preloader').delay(100).fadeOut('slow', function () {
@@ -91,25 +94,63 @@ $(window).on('load', function () {
 
 // action when user click to change the table
 $('#tableSelectionDropdown > ul').on('click', 'li', function(event) {
-	getRecords(event.target.attributes.value.value, 'toTable');
+	var newTable = event.target.attributes.value.value;
+	if (newTable != selectedTable) {
+		// if user change table to different (not refreshed), then clear filters
+		clearAllFilters();
+	}
+	getRecords(event.target.attributes.value.value, 'toTable', activeFilters);
 });
 
 // ##############################################################################
 // #                        Displaying records                                  # 
 // ##############################################################################
 
-function claseRecordDetailsAtDesktop() {
+function recordDetailsToPreviewMode() {
+	// configure record details modal to preview mode
+	var content = $('.recordDetails');
+	// hide all alerts
+	content.find('.alert-info').addClass('d-none');
+	content.find('.createSuccess').addClass('d-none');
+	content.find('.createFailed').addClass('d-none');
+	// switch fields to preview
+	content.find('.preview').removeClass('d-none');
+	content.find('.editable').addClass('d-none');
+	content.find('input, select').removeAttr('disabled');
+	// show Edit and Duplicate buttons only
+	content.find('.editBtn').removeClass('d-none');
+	content.find('.saveBtn').addClass('d-none');
+	content.find('.confirmBtn').addClass('d-none');
+	content.find('.duplicateBtn').removeClass('d-none');
+	content.find('.deleteBtn').addClass('d-none');
+	recalculateContentHeight();
+};
+
+$('.recordDetails').on('hidden.bs.modal', function () {
+	// check if new record was created
+	if (!$('.recordDetails').find('.createSuccess').hasClass('d-none')) {
+		getRecords(selectedTable, 'toTable', activeFilters);
+	}
+	recordDetailsToPreviewMode();
+});
+
+function closeRecordDetailsAtDesktop() {
 	Object.keys(nameTranslations).forEach( key => {
 		$('.recordDetails.'+key+'.desktop').removeClass('d-md-block');
 	})
 	recalculateContentHeight();
+	// check if new record was created
+	if (!$('.recordDetails').find('.createSuccess').hasClass('d-none')) {
+		getRecords(selectedTable, 'toTable', activeFilters);
+	}
 	recordDetailsToPreviewMode();
 }
 
-$('.recordDetails.desktop button.btn-close').on('click', claseRecordDetailsAtDesktop);
+$('.recordDetails.desktop button.btn-close').on('click', closeRecordDetailsAtDesktop);
 
 $('#showRecordsBtnM').on('click', function() {
 	closeColOrderPopover();
+	closeFilterPopover();
 	displaySelectedRecordsDetails();
 	new bootstrap.Modal(document.getElementsByClassName(selectedTable+' mobile')[0]).show();
 });
@@ -188,8 +229,9 @@ function displaySelectedRecordsDetails(){
 
 function displayRecordsList(records) {
 	// hide modals, popup
-	claseRecordDetailsAtDesktop();
+	closeRecordDetailsAtDesktop();
 	closeColOrderPopover();
+	closeFilterPopover();
 	var openModal = bootstrap.Modal.getInstance(document.getElementsByClassName('recordDetails '+selectedTable+' mobile')[0]);
 	if (openModal != null) openModal.hide();
 
@@ -222,14 +264,20 @@ function displayRecordsList(records) {
 	// - Select
 	dataTable = $('#content > table').DataTable({
 		destroy: true,
-		data: records.data,
+		data: records,
 		columns: columns,
 		paging: false,
 		scrollY: 300,
 		scrollX: false,
 		scrollCollapse: true,
 		"drawCallback": function(settings, json) {
+			$('div.dataTables_info').addClass('d-none');
 			recalculateContentHeight();
+		},
+		"infoCallback": function(settings, start, end, max, total, pre) {
+			$('#totalRecords span').text(max);
+			$('#foundRecords span').text(total);
+			return '';
 		},
 		responsive: true,
 		colReorder: true,
@@ -240,6 +288,7 @@ function displayRecordsList(records) {
 		dom: 'lrtip'			// remove 'i' to stop displaying bottom infor
 	})
 	.on('select', function () {
+		updateSelectInfo();
 		displaySelectedRecordsDetails();
 		// show profile for Desktop
 		$('.recordDetails.'+selectedTable+'.desktop').addClass('d-md-block');
@@ -248,6 +297,7 @@ function displayRecordsList(records) {
 		$('#showRecordsBtnM').removeClass('d-none');
 	})
 	.on('deselect', function (e, dt, type, indexes) {
+		updateSelectInfo();
 		// check if 1 or more 1 selected
 		if (dt.rows( { selected: true } ).data().length > 0) {
 			displaySelectedRecordsDetails();
@@ -258,7 +308,7 @@ function displayRecordsList(records) {
 			$('#showRecordsBtnM').removeClass('d-none');
 		} else {
 			// hide modals, which shows record details at Desktop
-			claseRecordDetailsAtDesktop();
+			closeRecordDetailsAtDesktop();
 			// hide button for Mobile
 			$('#showRecordsBtnM').addClass('d-none');
 		}
@@ -338,6 +388,7 @@ function recalculateContentHeight(){
 
 $(window).resize(function() {
 	closeColOrderPopover();
+	closeFilterPopover();
 	recalculateContentHeight();
 });
 
@@ -356,6 +407,28 @@ $('#navbarSupportedContent li.dropdown').on('shown.bs.dropdown',function() {
 $('#navbarSupportedContent li.dropdown').on('hidden.bs.dropdown',function() {
 	recalculateContentHeight();
 });
+
+// ##############################################################################
+// #                                Info                                        #
+// ##############################################################################
+
+function updateSelectInfo() {
+	var infoText = $('div.dataTables_info').addClass('d-none').find('.select-info:first-child').text();
+	// extract number
+	var n = infoText.search('row');
+	if (n > 0) {
+		var substring = infoText.slice(0, n-1);
+		var selected = Number(substring);
+		if (selected > 0) {
+			$('#selectedRecords').removeClass('d-none');
+			$('#selectedRecords span').text(selected);
+		} else {
+			$('#selectedRecords').addClass('d-none');
+		}
+	} else {
+		$('#selectedRecords').addClass('d-none');
+	}
+}
 
 // ##############################################################################
 // #                             Searching                                      # 
@@ -394,6 +467,7 @@ $('#selectInverse').on('click', function () {
 $('#sortRecordsBtnM').on('click', function() {
 	
 	closeColOrderPopover();
+	closeFilterPopover();
 	
 	// show Modal
 	new bootstrap.Modal(document.getElementById('sortAtMobile')).show();
@@ -600,21 +674,155 @@ $('#colOrderBtn').on('click', function() {
 		var popover = bootstrap.Popover.getInstance(trigger);
 		popover.show();
 	}
-})
+});
 
 // ##############################################################################
 // #                             Filtering                                      #
 // ##############################################################################
 
+function initiateFilterPopover() {
+	// add elements and attributies to Popup allowed elements
+	bootstrap.Tooltip.Default.allowList.button = ['type', 'value'];
+	bootstrap.Tooltip.Default.allowList.input = ['type', 'checked', 'value'];
+	bootstrap.Tooltip.Default.allowList.label = ['for'];
+	bootstrap.Tooltip.Default.allowList.table = [];
+	bootstrap.Tooltip.Default.allowList.thead = [];
+	bootstrap.Tooltip.Default.allowList.tbody = [];
+	bootstrap.Tooltip.Default.allowList.tr = ['value'];
+	bootstrap.Tooltip.Default.allowList.th = [];
+	bootstrap.Tooltip.Default.allowList.td = [];
+
+	// initialize popover
+	var trigger = document.getElementById('filterRecordsBtnD');
+	new bootstrap.Popover(trigger, {
+		content: function() {return $('.filter.desktop').html()},
+		html: true,
+		trigger: 'manual',
+		boundary: document.querySelector('#content') 
+	});
+	trigger.addEventListener('shown.bs.popover', function () {
+		// once content of popover is created, then
+		// it is feasible to assign some actions to its elements
+		var popover = bootstrap.Popover.getInstance(this);
+		var content = $(popover.tip);
+		// action assigned to close buttons
+		content.find('.closeBtn').on('click', closeFilterPopover);
+		content.find('.applyBtn').on('click', applyFilter);
+		content.find('.clearAllBtn').on('click', function() {
+			clearAllFilters();
+			getRecords(selectedTable, 'toTable', activeFilters);
+		});
+		applyActionsForFilters(content);
+		// adjust width, by removing max-widht property
+		$(content).css('max-width', '1000px');
+		popover.update();
+	});
+}
+
 $('#filterRecordsBtnD').on('click', function() {
-	console.log('show filter option on desktop');
-	//dataTable.searchPanes.container().prependTo(dataTable.table().container());
-    //dataTable.searchPanes.resizePanes();
+	updateContentForFilter();
+	// show Popover
+	var trigger = document.getElementById('filterRecordsBtnD');
+	var popover = bootstrap.Popover.getInstance(trigger);
+	popover.show();
 });
 
 $('#filterRecordsBtnM').on('click', function() {
-	console.log('show filter option on mobile');
+	updateContentForFilter();
+	applyActionsForFilters($('.filter.mobile'));
+	// show Modal
+	new bootstrap.Modal(document.getElementsByClassName('filter mobile')[0]).show();
 });
+
+function updateContentForFilter() {
+	// handler to lists at Modal (for Mobile) and Popover (for Desktop)
+	var content = $('.filter');
+	var list = content.find('tbody').html('');
+	
+	// generate columns list based on all columns and activeFilters
+	var columnsList = {column: []};
+	Object.keys(nameTranslations[selectedTable].columnsList).forEach(function(key) {
+
+		// check active filters
+		var active = false;
+		var query = '';
+		activeFilters.forEach(function(filter) {
+			if (filter.key == key) {
+				active = true,
+				query = filter.query 
+			}
+		});
+
+		// get list of all columns for selected table
+		columnsList.column.push({
+			key: key,
+			name: nameTranslations[selectedTable].columnsList[key],
+			active: active,
+			query: query
+		});
+
+	});
+
+	// use Handlebar to generate HTML
+	const source = $('#filterTemplate').html();
+	const template = Handlebars.compile(source);
+	list.append(template(columnsList));
+}
+
+function closeFilterPopover() {
+	var trigger = document.getElementById('filterRecordsBtnD');
+	var popover = bootstrap.Popover.getInstance(trigger);
+	popover.hide();
+}
+
+$('.filter.mobile .applyBtn').on('click', applyFilter);
+
+function applyFilter() {
+	var container = $(this).closest('.filter-content').find('tbody');
+	// clear previous filter
+	activeFilters = []; 
+	// read DOM and update active filters
+	container.children().each(function(index, tr) {
+		var active = $(tr).find('.form-check-input').is(':checked');
+		if (active) {
+			var columnKey = $(tr).attr('value');
+			var query = $(tr).find('.form-control').val();
+			activeFilters.push({
+				key: columnKey,
+				query: query
+			});
+		}
+	});
+	// show badge info 
+	var numberOfFilters = activeFilters.length;
+	if (numberOfFilters == 0) numberOfFilters = '';
+	$('#filterRecordsBtnD span').text(numberOfFilters);
+	$('#filterRecordsBtnM span').text(numberOfFilters);
+	getRecords(selectedTable, 'toTable', activeFilters);
+}
+
+$('.filter.mobile .clearAllBtn').on('click', function() {
+	clearAllFilters();
+	getRecords(selectedTable, 'toTable', activeFilters);
+});
+
+function clearAllFilters() {
+	activeFilters = [];
+	$('#filterRecordsBtnD span').text('');
+	$('#filterRecordsBtnM span').text('');
+}
+
+function applyActionsForFilters(content) {
+	content.find('.form-control').on('keyup', function(event) {
+		var inputField = $(event.target);
+		var checkbox = inputField.closest('tr').find('.form-check-input');
+		if (inputField.val() != '') {
+			checkbox.prop('checked', true);
+		} else {
+			checkbox.prop('checked', false);
+		}
+	});
+}
 
 // ##############################################################################
 // #                                  Edit                                      #
@@ -643,30 +851,6 @@ $('.recordDetails').find('.editBtn').on('click', function() {
 	recordDetailsToEditMode();
 });
 
-function recordDetailsToPreviewMode() {
-	// configure record details modal to preview mode
-	var content = $('.recordDetails');
-	// hide all alerts
-	content.find('.alert-info').addClass('d-none');
-	content.find('.createSuccess').addClass('d-none');
-	content.find('.createFailed').addClass('d-none');
-	// switch fields to preview
-	content.find('.preview').removeClass('d-none');
-	content.find('.editable').addClass('d-none');
-	content.find('input, select').removeAttr('disabled');
-	// show Edit and Duplicate buttons only
-	content.find('.editBtn').removeClass('d-none');
-	content.find('.saveBtn').addClass('d-none');
-	content.find('.confirmBtn').addClass('d-none');
-	content.find('.duplicateBtn').removeClass('d-none');
-	content.find('.deleteBtn').addClass('d-none');
-	recalculateContentHeight();
-};
-
-$('.recordDetails').on('hidden.bs.modal', function () {
-	recordDetailsToPreviewMode();
-});
-
 function populateSelectOptions(records, table) {
 	var select = $('select.'+table);
 	// clear any existing options
@@ -675,7 +859,7 @@ function populateSelectOptions(records, table) {
 	// first option is message to user
 	select.append($("<option></option>").val('pleaseSelect').text('Please select').addClass('d-none'));
 
-	records.data.forEach(function(element) {
+	records.forEach(function(element) {
 		// define option
 		var option = $("<option></option>");
 		for (var key in element) {
@@ -703,11 +887,11 @@ function populateSelectOptions(records, table) {
 };
 
 $('.recordDetails.department').find('.editBtn').on('click', function() {
-	getRecords('location', 'toSelectOptions');
+	getRecords('location', 'toSelectOptions', []);
 });
 
 $('.recordDetails.personnel').find('.editBtn').on('click', function() {
-	getRecords('department', 'toSelectOptions');
+	getRecords('department', 'toSelectOptions', []);
 });
 
 $('select.department').change(function() {
@@ -946,7 +1130,7 @@ function updateDBsuccess(response) {
 		// return to 'preview' mode of records details modal
 		recordDetailsToPreviewMode();
 		// reload table
-		getRecords(selectedTable, 'toTable');
+		getRecords(selectedTable, 'toTable', activeFilters);
 	} else {
 		updateDBerror();
 	}
@@ -1028,7 +1212,7 @@ function duplicateDBsuccess(response) {
 		$('#confirmDuplication .backBtn').addClass('d-none');
 		$('#confirmDuplication .closeBtn').removeClass('d-none');
 		// reload table
-		getRecords(selectedTable, 'toTable');
+		getRecords(selectedTable, 'toTable', activeFilters);
 	} else {
 		duplicateDBerror();
 	}
@@ -1128,7 +1312,7 @@ function deleteDBsuccess(response) {
 			$('#confirmDeletion .dependenciesDetails').addClass('d-none');
 			$('#confirmDeletion .releaseDependenciesBtn').addClass('d-none');
 			// reload table
-			getRecords(selectedTable, 'toTable');
+			getRecords(selectedTable, 'toTable', activeFilters);
 		} break;
 		case '202': {
 			// some records has dependencies
@@ -1280,6 +1464,7 @@ $('#addRecordBtnD').on('click', function() {
 
 $('#addRecordBtnM').on('click', function() {
 	closeColOrderPopover();
+	closeFilterPopover();
 	recordDetailsToCreateMode();
 	// show panel
 	new bootstrap.Modal(document.getElementsByClassName(selectedTable+' mobile')[0]).show();
@@ -1303,10 +1488,10 @@ function recordDetailsToCreateMode() {
 	// download options
 	switch(selectedTable) {
 		case 'personnel': {
-			getRecords('department', 'toSelectOptions');
+			getRecords('department', 'toSelectOptions', []);
 		} break;
 		case 'department': {
-			getRecords('location', 'toSelectOptions');
+			getRecords('location', 'toSelectOptions', []);
 		}
 	}
 
