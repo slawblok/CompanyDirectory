@@ -285,6 +285,7 @@ function displayRecordsList(records) {
 		scrollCollapse: true,
 		"drawCallback": function(settings, json) {
 			$('div.dataTables_info').addClass('d-none');
+			updateSelectInfo();
 			recalculateContentHeight();
 		},
 		"infoCallback": function(settings, start, end, max, total, pre) {
