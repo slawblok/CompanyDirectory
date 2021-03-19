@@ -232,7 +232,7 @@ function displaySelectedRecordsDetails(){
 }
 
 function displayRecordsList(records) {
-	// hide records details if different then cerod creation success
+	// hide records details if different then creation success
 	// check if new record was created, then do not close Record Details
 	if ($('.recordDetails.' + selectedTable + '.desktop').find('.createSuccess').hasClass('d-none')) {
 		closeRecordDetailsAtDesktop();
